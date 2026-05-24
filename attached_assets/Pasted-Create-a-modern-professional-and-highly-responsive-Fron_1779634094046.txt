@@ -1,0 +1,40 @@
+Create a modern, professional, and highly responsive Frontend Dashboard for a Wireless Mars Rover Control Web App. The design must be clean, sophisticated, and reflect current SaaS/Enterprise UI trends (flat design, subtle shadows, rounded corners, crisp typography). 
+
+***CRITICAL DESIGN DIRECTION***: 
+- Absolutely NO Cyberpunk, neon hacking, or sci-fi terminal themes. 
+- Use a modern tech aesthetic (similar to Linear, Vercel, or Apple dashboards).
+- Implement an easily toggleable Dark Mode and Light Mode.
+- Color Palette for Light Mode: Clean white backgrounds, slate gray borders, and deep indigo or royal blue accents. 
+- Color Palette for Dark Mode: Rich charcoal/matte black backgrounds, subtle gray borders, and crisp white/blue highlights.
+
+The single-page dashboard must include the following 4 main sections organized in a clean grid layout (Desktop optimized, but mobile-responsive):
+
+1. LIVE VIDEO STREAMING VIEW (The Hero Section)
+- A large, prominent video player container to display the real-time feed from the Rover's ESP32-CAM.
+- Include subtle overlay indicators on the video box: Connection status (Connected/Disconnected with a pulsing green/red dot), Current FPS, Wi-Fi Signal Strength (RSSI), and Battery Percentage (4200mAh status).
+
+2. THREE-WAY CONTROL SYSTEM PANELS
+
+   A. BUTTON-BASED MANUAL CONTROL (Gaming Style)
+   - Rover Movement: A classic 4-way D-Pad or Joystick-style button layout (Forward, Backward, Left, Right, Stop) for controlling the 4WD chassis.
+   - 5DOF Robotic Arm: A dedicated, intuitive control grid to manage 5 independent DC motors. Each joint (Base, Shoulder, Elbow, Wrist, Gripper) should have sleek "+" and "-" or "Left/Right" button pairs, with a small visual slider or progress bar showing the simulated position/angle.
+
+   B. AI INSTRUCTION CONTROLLER (Text Input)
+   - A clean chat-style input box with a placeholder like "Tell the Rover what to do (e.g., 'Move forward 2 meters and check for obstacles')."
+   - Support for Natural Language processing interface (English & Bengali).
+   - A mini "Command History" log area showing the last 3 parsed commands with success checkmarks.
+
+   C. VOICE COMMAND INTERFACE
+   - A prominent, elegant animated Microphone button. 
+   - When clicked, it should show a modern waveform animation (not a retro radar) indicating it is listening for voice instructions.
+
+3. TELEMETRY & SENSOR MONITORING
+- A clean sidebar or bottom row showing real-time metrics with beautiful icons:
+  - Ultrasonic Distance Sensor (displayed in cm with a visual proximity alert bar).
+  - Mini Solar Panel efficiency voltage or status.
+  - Active AI Status (e.g., "YOLOv8 Object Detection: Active").
+
+4. THEME & SETTINGS HEADER
+- A top navigation bar containing the App Title ("ARES-01 Rover Mission Control"), a status badge, and a beautifully designed Light/Dark mode toggle switch (Sun/Moon icons).
+
+Please use modern component libraries styling rules (like Tailwind CSS) with smooth transitions for hover states, button presses, and theme switching. Deliver a polished, production-ready frontend structure.

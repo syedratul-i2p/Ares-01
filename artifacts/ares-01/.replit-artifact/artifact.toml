@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "ARES-01 Rover Mission Control"
+version = "1.0.0"
+id = "artifacts/ares-01"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22091
+
+[services.development]
+run = "pnpm --filter @workspace/ares-01 run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ares-01", "run", "build" ]
+publicDir = "artifacts/ares-01/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22091"
+BASE_PATH = "/"
