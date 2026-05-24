@@ -41,9 +41,26 @@ import { motion, AnimatePresence } from "framer-motion";
 type ConnectionStatus = "disconnected" | "connecting" | "connected";
 type Direction = "forward" | "backward" | "left" | "right";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers & Constants ─────────────────────────────────────────────────────
 
 const LOG_PREFIX = "[ARES-01]";
+
+const JOINT_CONFIG = {
+  base:     { label: "Base",     color: "#64748b", accentClass: "text-slate-500",   dotClass: "bg-slate-500"   },
+  shoulder: { label: "Shoulder", color: "#3b82f6", accentClass: "text-blue-500",    dotClass: "bg-blue-500"    },
+  elbow:    { label: "Elbow",    color: "#6366f1", accentClass: "text-indigo-500",  dotClass: "bg-indigo-500"  },
+  wrist:    { label: "Wrist",    color: "#8b5cf6", accentClass: "text-violet-500",  dotClass: "bg-violet-500"  },
+  gripper:  { label: "Gripper",  color: "#10b981", accentClass: "text-emerald-500", dotClass: "bg-emerald-500" },
+} as const;
+
+const JOINT_ORDER = ["base", "shoulder", "elbow", "wrist", "gripper"] as const;
+
+const ARM_PRESETS = [
+  { name: "Home",  joints: { base: 90, shoulder: 90,  elbow: 90,  wrist: 90, gripper: 0   } },
+  { name: "Pick",  joints: { base: 90, shoulder: 45,  elbow: 135, wrist: 90, gripper: 180 } },
+  { name: "Drop",  joints: { base: 45, shoulder: 60,  elbow: 90,  wrist: 45, gripper: 0   } },
+  { name: "Reach", joints: { base: 90, shoulder: 150, elbow: 150, wrist: 90, gripper: 90  } },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -125,28 +142,44 @@ export default function Dashboard() {
     setJoints(prev => ({ ...prev, [joint]: next }));
   };
 
-  const handleResetArm = () => {
+  const animateJointsTo = (target: typeof joints, label: string) => {
     if (resetAnimRef.current) clearInterval(resetAnimRef.current);
-    console.log(`${LOG_PREFIX} Arm Reset → home position`);
-    // TODO: send WebSocket / HTTP command → { action: "arm_reset" }
+    console.log(`${LOG_PREFIX} Arm → ${label}`);
+    // TODO: send WebSocket / HTTP command → { action: "arm_pose", target }
     const startValues = { ...joints };
     const steps = 24;
     let step = 0;
     resetAnimRef.current = setInterval(() => {
       step++;
-      const t = 1 - Math.pow(1 - step / steps, 3); // ease-out cubic
+      const t = 1 - Math.pow(1 - step / steps, 3);
       setJoints({
-        base:     Math.round(startValues.base     + (DEFAULT_JOINTS.base     - startValues.base)     * t),
-        shoulder: Math.round(startValues.shoulder + (DEFAULT_JOINTS.shoulder - startValues.shoulder) * t),
-        elbow:    Math.round(startValues.elbow    + (DEFAULT_JOINTS.elbow    - startValues.elbow)    * t),
-        wrist:    Math.round(startValues.wrist    + (DEFAULT_JOINTS.wrist    - startValues.wrist)    * t),
-        gripper:  Math.round(startValues.gripper  + (DEFAULT_JOINTS.gripper  - startValues.gripper)  * t),
+        base:     Math.round(startValues.base     + (target.base     - startValues.base)     * t),
+        shoulder: Math.round(startValues.shoulder + (target.shoulder - startValues.shoulder) * t),
+        elbow:    Math.round(startValues.elbow    + (target.elbow    - startValues.elbow)    * t),
+        wrist:    Math.round(startValues.wrist    + (target.wrist    - startValues.wrist)    * t),
+        gripper:  Math.round(startValues.gripper  + (target.gripper  - startValues.gripper)  * t),
       });
-      if (step >= steps) {
-        clearInterval(resetAnimRef.current!);
-        resetAnimRef.current = null;
-      }
+      if (step >= steps) { clearInterval(resetAnimRef.current!); resetAnimRef.current = null; }
     }, 16);
+  };
+
+  const handleResetArm = () => animateJointsTo(DEFAULT_JOINTS, "Home (reset)");
+  const applyPreset = (preset: typeof ARM_PRESETS[0]) => animateJointsTo(preset.joints, `Preset: ${preset.name}`);
+
+  // Step size toggle
+  const [stepSize, setStepSize] = useState<1 | 5 | 15>(5);
+
+  // Click-to-edit angle value
+  const [editingJoint, setEditingJoint] = useState<keyof typeof joints | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const startEdit = (joint: keyof typeof joints, value: number) => {
+    setEditingJoint(joint);
+    setEditValue(String(value));
+  };
+  const commitEdit = (joint: keyof typeof joints) => {
+    const parsed = parseInt(editValue, 10);
+    if (!isNaN(parsed)) setJointAngle(joint, parsed);
+    setEditingJoint(null);
   };
 
   // ── AI Command ─────────────────────────────────────────────────────────────
@@ -570,52 +603,180 @@ export default function Dashboard() {
 
               {/* 5DOF Arm */}
               <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">5DOF Arm Control</h4>
-                {(Object.entries(joints) as [keyof typeof joints, number][]).map(([key, value]) => (
-                  <div key={key} className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="capitalize font-medium">{key}</span>
-                      <span className="font-mono text-primary font-semibold tabular-nums w-12 text-right">
-                        {value}°
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-6 w-6 shrink-0 active:scale-90 transition-transform"
-                        onClick={() => updateJoint(key, -5)}
-                        data-testid={`btn-arm-${key}-dec`}
-                      >
-                        −
-                      </Button>
-                      <input
-                        type="range"
-                        min={0}
-                        max={180}
-                        value={value}
-                        onChange={e => setJointAngle(key, Number(e.target.value))}
-                        className="joint-slider flex-1"
-                        data-testid={`slider-arm-${key}`}
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-6 w-6 shrink-0 active:scale-90 transition-transform"
-                        onClick={() => updateJoint(key, 5)}
-                        data-testid={`btn-arm-${key}-inc`}
-                      >
-                        +
-                      </Button>
-                    </div>
-                  </div>
-                ))}
 
-                {/* Reset to Home */}
+                {/* Header: title + step-size toggle */}
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">5DOF Arm Control</h4>
+                  <div className="flex rounded-md overflow-hidden border border-border text-[10px] font-mono">
+                    {([1, 5, 15] as const).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setStepSize(s)}
+                        className={`px-2 py-0.5 transition-colors ${stepSize === s ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                        data-testid={`btn-step-${s}`}
+                      >
+                        {s}°
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SVG arm diagram + base rotation indicator */}
+                {(() => {
+                  const PI = Math.PI;
+                  const seg = 22;
+                  const base = { x: 18, y: 82 };
+                  const vec = (a: number, l: number) => ({ dx: Math.cos(a * PI / 180) * l, dy: -Math.sin(a * PI / 180) * l });
+
+                  // Standard math angles (0=right, 90=up); remap joints to visual angles
+                  const sA = 20 + (joints.shoulder / 180) * 140;
+                  const sv = vec(sA, seg);
+                  const sp = { x: base.x + sv.dx, y: base.y + sv.dy };
+
+                  const eA = sA + ((joints.elbow - 90) / 90) * 65;
+                  const ev = vec(eA, seg);
+                  const ep = { x: sp.x + ev.dx, y: sp.y + ev.dy };
+
+                  const wA = eA + ((joints.wrist - 90) / 90) * 55;
+                  const wv = vec(wA, seg);
+                  const wp = { x: ep.x + wv.dx, y: ep.y + wv.dy };
+
+                  const gripSpread = (joints.gripper / 180) * 28;
+                  const stemV = vec(wA, 7);
+                  const stemEnd = { x: wp.x + stemV.dx, y: wp.y + stemV.dy };
+                  const g1v = vec(wA + gripSpread, 9);
+                  const g2v = vec(wA - gripSpread, 9);
+                  const g1 = { x: stemEnd.x + g1v.dx, y: stemEnd.y + g1v.dy };
+                  const g2 = { x: stemEnd.x + g2v.dx, y: stemEnd.y + g2v.dy };
+
+                  const baseLineAngle = (joints.base - 90) * PI / 180;
+
+                  return (
+                    <div className="bg-muted/30 rounded-lg p-2 flex items-center gap-3">
+                      {/* Side-view arm */}
+                      <svg width="110" height="96" viewBox="0 0 110 96" className="shrink-0">
+                        {/* Ground line */}
+                        <line x1="8" y1="88" x2="50" y2="88" stroke="currentColor" strokeWidth="1" opacity="0.15" />
+                        {/* Base mount */}
+                        <rect x="12" y="82" width="12" height="6" rx="2" fill="currentColor" opacity="0.2" />
+
+                        {/* Arm segments */}
+                        <line x1={base.x} y1={base.y} x2={sp.x} y2={sp.y} stroke={JOINT_CONFIG.shoulder.color} strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={sp.x} y1={sp.y} x2={ep.x} y2={ep.y} stroke={JOINT_CONFIG.elbow.color} strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={ep.x} y1={ep.y} x2={wp.x} y2={wp.y} stroke={JOINT_CONFIG.wrist.color} strokeWidth="2.5" strokeLinecap="round" />
+                        {/* Gripper stem */}
+                        <line x1={wp.x} y1={wp.y} x2={stemEnd.x} y2={stemEnd.y} stroke={JOINT_CONFIG.gripper.color} strokeWidth="2" strokeLinecap="round" />
+                        {/* Gripper fingers */}
+                        <line x1={stemEnd.x} y1={stemEnd.y} x2={g1.x} y2={g1.y} stroke={JOINT_CONFIG.gripper.color} strokeWidth="2" strokeLinecap="round" />
+                        <line x1={stemEnd.x} y1={stemEnd.y} x2={g2.x} y2={g2.y} stroke={JOINT_CONFIG.gripper.color} strokeWidth="2" strokeLinecap="round" />
+
+                        {/* Joint dots */}
+                        <circle cx={base.x} cy={base.y} r="4" fill={JOINT_CONFIG.shoulder.color} />
+                        <circle cx={sp.x} cy={sp.y} r="3.5" fill={JOINT_CONFIG.elbow.color} />
+                        <circle cx={ep.x} cy={ep.y} r="3.5" fill={JOINT_CONFIG.wrist.color} />
+                        <circle cx={wp.x} cy={wp.y} r="3"   fill={JOINT_CONFIG.gripper.color} />
+                      </svg>
+
+                      {/* Base rotation top-view */}
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Base</span>
+                        <svg width="44" height="44" viewBox="-22 -22 44 44">
+                          <circle r="18" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.2" />
+                          <circle r="18" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="2 4" opacity="0.15" />
+                          <line
+                            x1="0" y1="0"
+                            x2={Math.cos(baseLineAngle) * 15}
+                            y2={Math.sin(baseLineAngle) * 15}
+                            stroke={JOINT_CONFIG.base.color} strokeWidth="2.5" strokeLinecap="round"
+                          />
+                          <circle r="3" fill={JOINT_CONFIG.base.color} />
+                        </svg>
+                        <span className="text-[10px] font-mono font-bold" style={{ color: JOINT_CONFIG.base.color }}>{joints.base}°</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Pose presets */}
+                <div className="grid grid-cols-4 gap-1">
+                  {ARM_PRESETS.map(preset => (
+                    <button
+                      key={preset.name}
+                      onClick={() => applyPreset(preset)}
+                      className="text-[11px] py-1 px-1.5 rounded border border-border bg-background hover:bg-muted hover:text-foreground transition-colors text-muted-foreground font-medium"
+                      data-testid={`btn-preset-${preset.name.toLowerCase()}`}
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Joint rows (skip base — shown in diagram) */}
+                {JOINT_ORDER.map(key => {
+                  const cfg = JOINT_CONFIG[key];
+                  const value = joints[key];
+                  return (
+                    <div key={key} className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-1.5 text-xs font-medium">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dotClass}`} />
+                          {cfg.label}
+                        </span>
+                        {editingJoint === key ? (
+                          <input
+                            type="number"
+                            min={0}
+                            max={180}
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                            onBlur={() => commitEdit(key)}
+                            onKeyDown={e => { if (e.key === "Enter") commitEdit(key); if (e.key === "Escape") setEditingJoint(null); }}
+                            className="w-14 text-right font-mono text-xs border border-border rounded px-1.5 py-0.5 bg-background focus:outline-none focus:border-primary"
+                            autoFocus
+                            data-testid={`input-arm-${key}-direct`}
+                          />
+                        ) : (
+                          <button
+                            onClick={() => startEdit(key, value)}
+                            title="Click to type exact angle"
+                            className={`text-xs font-mono font-semibold tabular-nums hover:underline cursor-text ${cfg.accentClass}`}
+                            data-testid={`btn-arm-${key}-value`}
+                          >
+                            {value}°
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => updateJoint(key, -stepSize)}
+                          className="h-6 w-6 shrink-0 rounded border border-border flex items-center justify-center text-xs bg-background hover:bg-muted active:scale-90 transition-all text-muted-foreground"
+                          data-testid={`btn-arm-${key}-dec`}
+                        >−</button>
+                        <input
+                          type="range"
+                          min={0}
+                          max={180}
+                          value={value}
+                          onChange={e => setJointAngle(key, Number(e.target.value))}
+                          className="joint-slider flex-1"
+                          style={{ accentColor: cfg.color }}
+                          data-testid={`slider-arm-${key}`}
+                        />
+                        <button
+                          onClick={() => updateJoint(key, stepSize)}
+                          className="h-6 w-6 shrink-0 rounded border border-border flex items-center justify-center text-xs bg-background hover:bg-muted active:scale-90 transition-all text-muted-foreground"
+                          data-testid={`btn-arm-${key}-inc`}
+                        >+</button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Reset */}
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full mt-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                  className="w-full mt-1 text-xs gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
                   onClick={handleResetArm}
                   data-testid="btn-arm-reset"
                 >
