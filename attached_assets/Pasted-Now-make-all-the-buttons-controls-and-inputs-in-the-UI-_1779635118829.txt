@@ -1,0 +1,25 @@
+Now, make all the buttons, controls, and inputs in the UI fully functional with proper frontend state management and interactivity. I want to prepare the frontend so that it can easily send data to my backend/microcontroller later. Please implement the following interactivity logic using clean JavaScript/State management:
+
+1. 4WD ROVER BUTTONS (Gaming D-Pad)
+- When any movement button (Forward, Backward, Left, Right) is pressed down (onMouseDown / onTouchStart), trigger an action/log like "Rover Moving: [Direction]".
+- When the button is released (onMouseUp / onTouchEnd), or if the "Stop" button is clicked, trigger "Rover Action: STOP".
+- Add active visual states (e.g., button shrinks slightly or changes opacity when actively pressed).
+
+2. 5DOF ROBOTIC ARM CONTROLS
+- For the "+" and "-" buttons of each joint (Base, Shoulder, Elbow, Wrist, Gripper), make them increment or decrement a simulated angle value (bounded between 0° and 180°).
+- Update the corresponding position text (e.g., "Base: 90°") and the visual slider/progress bar in real-time as the buttons are pressed.
+
+3. AI INSTRUCTION TEXT INPUT
+- When the user types a command in the input field and presses "Enter" or clicks the send/submit button, capture the text input.
+- Simulate sending the message: Add the entered command to the "Command History" log dynamically, and clear the input field.
+
+4. VOICE COMMAND BUTTON
+- When the Microphone button is clicked, toggle an "IsListening" state.
+- While active, trigger the modern waveform animation and change the button color to indicate active listening. Clicking it again should stop the state.
+
+5. CONNECTION PANEL INTERACTION
+- When the "Connect to Rover" button is clicked, change the status badge to "Connecting..." and disable the button for 2 seconds (simulating a handshake).
+- After 2 seconds, switch the status badge to "Connected to ESP32-S3" (Green dot), change the button text to "Disconnect", and make the Ping/Latency indicator show a realistic fluctuating number (e.g., between 10ms - 25ms).
+- Clicking "Disconnect" should reset everything back to the disconnected state.
+
+Ensure all states are fully reactive, do not reload the page, and print clean `console.log()` statements for every action so I can easily bind my backend APIs and WebSockets to these events later.

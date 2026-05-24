@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { 
-  Sun, 
-  Moon, 
-  Settings, 
-  Signal, 
-  Battery, 
-  ArrowUp, 
-  ArrowDown, 
-  ArrowLeft, 
+import {
+  Sun,
+  Moon,
+  Settings,
+  Signal,
+  Battery,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
   ArrowRight,
   Square,
   Mic,
@@ -38,11 +38,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ConnectionStatus = "disconnected" | "connecting" | "connected";
+type Direction = "forward" | "backward" | "left" | "right";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const LOG_PREFIX = "[ARES-01]";
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const { theme, setTheme } = useTheme();
 
-  // Simulated Telemetry State
+  // ── Telemetry ──────────────────────────────────────────────────────────────
   const [fps, setFps] = useState(24);
   const [rssi, setRssi] = useState(-62);
   const [distance, setDistance] = useState(120);
@@ -59,7 +66,36 @@ export default function Dashboard() {
     setYaw(Number((45.1 + (Math.random() * 0.4 - 0.2)).toFixed(1)));
   }, 1000);
 
-  // Robotic Arm State
+  // ── D-Pad ──────────────────────────────────────────────────────────────────
+  const [activeDirection, setActiveDirection] = useState<Direction | null>(null);
+
+  const handleDirectionPress = (dir: Direction) => {
+    setActiveDirection(dir);
+    console.log(`${LOG_PREFIX} Rover Moving: ${dir.toUpperCase()}`);
+    // TODO: send WebSocket / HTTP command → { action: "move", direction: dir }
+  };
+
+  const handleDirectionRelease = () => {
+    if (activeDirection !== null) {
+      setActiveDirection(null);
+      console.log(`${LOG_PREFIX} Rover Action: STOP`);
+      // TODO: send WebSocket / HTTP command → { action: "stop" }
+    }
+  };
+
+  const handleStop = () => {
+    setActiveDirection(null);
+    console.log(`${LOG_PREFIX} Rover Action: STOP (manual)`);
+    // TODO: send WebSocket / HTTP command → { action: "stop" }
+  };
+
+  // Returns extra classes for an active D-pad button
+  const dpadActive = (dir: Direction) =>
+    activeDirection === dir
+      ? "scale-90 opacity-60 ring-2 ring-primary/40"
+      : "";
+
+  // ── 5DOF Arm ───────────────────────────────────────────────────────────────
   const [joints, setJoints] = useState({
     base: 90,
     shoulder: 45,
@@ -69,22 +105,34 @@ export default function Dashboard() {
   });
 
   const updateJoint = (joint: keyof typeof joints, delta: number) => {
-    setJoints(prev => ({
-      ...prev,
-      [joint]: Math.max(0, Math.min(180, prev[joint] + delta))
-    }));
+    setJoints(prev => {
+      const next = Math.max(0, Math.min(180, prev[joint] + delta));
+      console.log(`${LOG_PREFIX} Arm Joint: ${joint} → ${next}° (${delta > 0 ? "+" : ""}${delta})`);
+      // TODO: send WebSocket / HTTP command → { action: "arm", joint, angle: next }
+      return { ...prev, [joint]: next };
+    });
   };
 
-  // AI Command State
+  // ── AI Command ─────────────────────────────────────────────────────────────
   const [command, setCommand] = useState("");
+  const [language, setLanguage] = useState("en");
   const [history, setHistory] = useState([
     { id: 1, text: "Move forward 2 meters and scan for obstacles", time: "10:42:15 AM" },
     { id: 2, text: "Rotate base 45 degrees left", time: "10:40:02 AM" },
     { id: 3, text: "Initialize YOLOv8 object detection", time: "10:38:55 AM" }
   ]);
 
+  const handleLanguageChange = (val: string) => {
+    setLanguage(val);
+    const label = val === "en" ? "English" : "Bengali";
+    console.log(`${LOG_PREFIX} AI Language set to: ${label}`);
+  };
+
   const handleSendCommand = () => {
     if (!command.trim()) return;
+    const lang = language === "en" ? "English" : "Bengali";
+    console.log(`${LOG_PREFIX} AI Command Sent [${lang}]: "${command}"`);
+    // TODO: POST to AI endpoint → { command, language }
     const newCmd = {
       id: Date.now(),
       text: command,
@@ -94,13 +142,18 @@ export default function Dashboard() {
     setCommand("");
   };
 
-  // Voice Command State
+  // ── Voice ──────────────────────────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false);
 
-  // Settings Panel State
-  const [showSettings, setShowSettings] = useState(false);
+  const handleVoiceToggle = () => {
+    const next = !isListening;
+    setIsListening(next);
+    console.log(`${LOG_PREFIX} Voice Recognition: ${next ? "STARTED — waiting for command" : "STOPPED"}`);
+    // TODO: start / stop Web Speech API or stream audio to backend
+  };
 
-  // Device Connection State
+  // ── Settings / Connection ──────────────────────────────────────────────────
+  const [showSettings, setShowSettings] = useState(false);
   const [connectionType, setConnectionType] = useState("websocket");
   const [ipAddress, setIpAddress] = useState("");
   const [port, setPort] = useState("");
@@ -114,15 +167,30 @@ export default function Dashboard() {
     }
   }, 1200);
 
+  const handleConnectionTypeChange = (val: string) => {
+    setConnectionType(val);
+    console.log(`${LOG_PREFIX} Connection type changed to: ${val.toUpperCase()}`);
+  };
+
   const handleConnect = () => {
+    const addr = `${ipAddress || "<no-ip>"}:${port || "<no-port>"}`;
+    console.log(`${LOG_PREFIX} Connecting via ${connectionType.toUpperCase()} → ${addr}`);
+    // TODO: open WebSocket at ws://${addr} or set base HTTP URL
     setConnectionStatus("connecting");
     setTimeout(() => {
       setConnectionStatus("connected");
       setPing(12);
-    }, 1800);
+      console.log(`${LOG_PREFIX} Connected to ESP32-S3 via ${connectionType.toUpperCase()} @ ${addr}`);
+      if (streamUrl) {
+        console.log(`${LOG_PREFIX} Video stream endpoint: ${streamUrl}`);
+      }
+      // TODO: confirm connection handshake, start telemetry subscription
+    }, 2000);
   };
 
   const handleDisconnect = () => {
+    console.log(`${LOG_PREFIX} Disconnected from Rover`);
+    // TODO: close WebSocket / clear HTTP session
     setConnectionStatus("disconnected");
     setPing(null);
   };
@@ -147,9 +215,11 @@ export default function Dashboard() {
 
   const currentStatus = statusConfig[connectionStatus];
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
-      {/* Top Nav */}
+
+      {/* ── Top Nav ── */}
       <header className="h-14 border-b bg-card flex items-center justify-between px-6 shrink-0 z-10 relative">
         <div className="flex items-center gap-4">
           <h1 className="font-bold text-lg tracking-tight">ARES-01</h1>
@@ -169,18 +239,18 @@ export default function Dashboard() {
           >
             {showSettings ? <X className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             data-testid="button-theme-toggle"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
         </div>
       </header>
 
-      {/* Settings / Connection Panel */}
+      {/* ── Settings / Connection Panel ── */}
       <AnimatePresence>
         {showSettings && (
           <motion.div
@@ -200,12 +270,12 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
 
-                {/* 1. Connection Type */}
+                {/* Connection Type */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Connection Type
                   </label>
-                  <Select value={connectionType} onValueChange={setConnectionType}>
+                  <Select value={connectionType} onValueChange={handleConnectionTypeChange}>
                     <SelectTrigger data-testid="select-connection-type" className="bg-background">
                       <SelectValue />
                     </SelectTrigger>
@@ -226,7 +296,7 @@ export default function Dashboard() {
                   </Select>
                 </div>
 
-                {/* 2. IP Address + Port */}
+                {/* IP + Port */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Rover Address
@@ -249,7 +319,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* 3. Stream URL */}
+                {/* Stream URL */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <Video className="w-3 h-3" />
@@ -264,7 +334,7 @@ export default function Dashboard() {
                   />
                 </div>
 
-                {/* 4. Connect Button + Status + Ping */}
+                {/* Connect / Status / Ping */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Connection Control
@@ -296,8 +366,6 @@ export default function Dashboard() {
                       </Button>
                     )}
                   </div>
-
-                  {/* Status Badge + Ping */}
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md border ${currentStatus.color} transition-all duration-300`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${currentStatus.dot}`} />
@@ -324,15 +392,20 @@ export default function Dashboard() {
       </AnimatePresence>
 
       <main className="flex-1 p-6 flex flex-col gap-6 max-w-[1600px] mx-auto w-full">
-        {/* Video Feed */}
+
+        {/* ── Video Feed ── */}
         <section className="w-full relative aspect-video max-h-[50vh] bg-black rounded-xl overflow-hidden border shadow-sm flex items-center justify-center">
-          <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" 
-               style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+          <div
+            className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+              backgroundSize: "20px 20px"
+            }}
+          />
           <div className="text-muted-foreground/30 font-mono text-2xl tracking-widest pointer-events-none">
             FEED — ESP32-CAM
           </div>
-          
-          {/* Overlays */}
           <div className="absolute top-4 left-4 flex gap-2">
             <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-md border-white/10">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse mr-2" />
@@ -354,8 +427,9 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* 3-Way Control System */}
+        {/* ── 3-Way Control System ── */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
           {/* Panel A: Manual Control */}
           <Card>
             <CardHeader>
@@ -365,40 +439,125 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-8">
+
               {/* D-Pad */}
-              <div className="flex flex-col items-center gap-2">
-                <Button variant="secondary" size="lg" className="w-16 h-16 active:scale-95 transition-transform" data-testid="btn-move-fwd">
+              <div className="flex flex-col items-center gap-2 select-none">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className={`w-16 h-16 transition-all duration-75 ${dpadActive("forward")}`}
+                  onMouseDown={() => handleDirectionPress("forward")}
+                  onMouseUp={handleDirectionRelease}
+                  onMouseLeave={handleDirectionRelease}
+                  onTouchStart={e => { e.preventDefault(); handleDirectionPress("forward"); }}
+                  onTouchEnd={handleDirectionRelease}
+                  data-testid="btn-move-fwd"
+                >
                   <ArrowUp className="w-6 h-6" />
                 </Button>
+
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="lg" className="w-16 h-16 active:scale-95 transition-transform" data-testid="btn-move-left">
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className={`w-16 h-16 transition-all duration-75 ${dpadActive("left")}`}
+                    onMouseDown={() => handleDirectionPress("left")}
+                    onMouseUp={handleDirectionRelease}
+                    onMouseLeave={handleDirectionRelease}
+                    onTouchStart={e => { e.preventDefault(); handleDirectionPress("left"); }}
+                    onTouchEnd={handleDirectionRelease}
+                    data-testid="btn-move-left"
+                  >
                     <ArrowLeft className="w-6 h-6" />
                   </Button>
-                  <Button variant="destructive" size="lg" className="w-16 h-16 active:scale-95 transition-transform" data-testid="btn-move-stop">
+
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    className="w-16 h-16 transition-all duration-75 active:scale-95"
+                    onClick={handleStop}
+                    data-testid="btn-move-stop"
+                  >
                     <Square className="w-5 h-5 fill-current" />
                   </Button>
-                  <Button variant="secondary" size="lg" className="w-16 h-16 active:scale-95 transition-transform" data-testid="btn-move-right">
+
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className={`w-16 h-16 transition-all duration-75 ${dpadActive("right")}`}
+                    onMouseDown={() => handleDirectionPress("right")}
+                    onMouseUp={handleDirectionRelease}
+                    onMouseLeave={handleDirectionRelease}
+                    onTouchStart={e => { e.preventDefault(); handleDirectionPress("right"); }}
+                    onTouchEnd={handleDirectionRelease}
+                    data-testid="btn-move-right"
+                  >
                     <ArrowRight className="w-6 h-6" />
                   </Button>
                 </div>
-                <Button variant="secondary" size="lg" className="w-16 h-16 active:scale-95 transition-transform" data-testid="btn-move-back">
+
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className={`w-16 h-16 transition-all duration-75 ${dpadActive("backward")}`}
+                  onMouseDown={() => handleDirectionPress("backward")}
+                  onMouseUp={handleDirectionRelease}
+                  onMouseLeave={handleDirectionRelease}
+                  onTouchStart={e => { e.preventDefault(); handleDirectionPress("backward"); }}
+                  onTouchEnd={handleDirectionRelease}
+                  data-testid="btn-move-back"
+                >
                   <ArrowDown className="w-6 h-6" />
                 </Button>
+
+                {/* Active direction readout */}
+                <div className="h-5 mt-1">
+                  <AnimatePresence>
+                    {activeDirection && (
+                      <motion.span
+                        key={activeDirection}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="text-xs font-mono font-semibold text-primary uppercase tracking-widest"
+                        data-testid="text-active-direction"
+                      >
+                        ▶ {activeDirection}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
               {/* 5DOF Arm */}
               <div className="space-y-4">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">5DOF Arm Control</h4>
-                {Object.entries(joints).map(([key, value]) => (
+                {(Object.entries(joints) as [keyof typeof joints, number][]).map(([key, value]) => (
                   <div key={key} className="space-y-1.5">
                     <div className="flex justify-between text-xs">
                       <span className="capitalize">{key}</span>
                       <span className="font-mono text-muted-foreground">{value}°</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Button variant="outline" size="icon" className="h-6 w-6 shrink-0" onClick={() => updateJoint(key as keyof typeof joints, -5)} data-testid={`btn-arm-${key}-dec`}>-</Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 active:scale-90 transition-transform"
+                        onClick={() => updateJoint(key, -5)}
+                        data-testid={`btn-arm-${key}-dec`}
+                      >
+                        −
+                      </Button>
                       <Progress value={(value / 180) * 100} className="h-1.5" />
-                      <Button variant="outline" size="icon" className="h-6 w-6 shrink-0" onClick={() => updateJoint(key as keyof typeof joints, 5)} data-testid={`btn-arm-${key}-inc`}>+</Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 active:scale-90 transition-transform"
+                        onClick={() => updateJoint(key, 5)}
+                        data-testid={`btn-arm-${key}-inc`}
+                      >
+                        +
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -416,7 +575,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="flex flex-col h-full gap-4">
               <div className="flex gap-2">
-                <Select defaultValue="en">
+                <Select value={language} onValueChange={handleLanguageChange}>
                   <SelectTrigger className="w-[110px]" data-testid="select-lang">
                     <SelectValue placeholder="Language" />
                   </SelectTrigger>
@@ -426,31 +585,40 @@ export default function Dashboard() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="flex gap-2">
-                <Input 
-                  placeholder="Tell the rover what to do..." 
+                <Input
+                  placeholder="Tell the rover what to do..."
                   value={command}
                   onChange={e => setCommand(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSendCommand()}
+                  onKeyDown={e => e.key === "Enter" && handleSendCommand()}
                   data-testid="input-ai-cmd"
                 />
-                <Button onClick={handleSendCommand} data-testid="btn-ai-send">
+                <Button onClick={handleSendCommand} data-testid="btn-ai-send" className="active:scale-95 transition-transform">
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
-              
+
               <div className="mt-4 flex-1">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Command Log</h4>
                 <div className="space-y-3">
-                  {history.map((cmd) => (
-                    <div key={cmd.id} className="flex gap-3 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                      <div className="flex flex-col">
-                        <span className="text-foreground">{cmd.text}</span>
-                        <span className="text-xs text-muted-foreground font-mono">{cmd.time}</span>
-                      </div>
-                    </div>
-                  ))}
+                  <AnimatePresence initial={false}>
+                    {history.map(cmd => (
+                      <motion.div
+                        key={cmd.id}
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="flex gap-3 text-sm"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                        <div className="flex flex-col">
+                          <span className="text-foreground">{cmd.text}</span>
+                          <span className="text-xs text-muted-foreground font-mono">{cmd.time}</span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
               </div>
             </CardContent>
@@ -465,6 +633,23 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center h-full min-h-[300px] gap-6">
+
+              {/* Waveform bars — visible only when listening */}
+              <div className="flex items-end justify-center gap-1 h-10">
+                <AnimatePresence>
+                  {isListening &&
+                    [0.6, 1, 0.7, 1, 0.5, 0.9, 0.6, 1, 0.7].map((base, i) => (
+                      <motion.span
+                        key={i}
+                        className="w-1.5 rounded-full bg-primary"
+                        animate={{ scaleY: [base * 0.4, base, base * 0.5, base * 0.9, base * 0.3] }}
+                        transition={{ repeat: Infinity, duration: 0.8 + i * 0.07, ease: "easeInOut" }}
+                        style={{ height: 32, originY: 1, display: "inline-block" }}
+                      />
+                    ))}
+                </AnimatePresence>
+              </div>
+
               <div className="relative">
                 <AnimatePresence>
                   {isListening && (
@@ -477,19 +662,20 @@ export default function Dashboard() {
                     />
                   )}
                 </AnimatePresence>
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   variant={isListening ? "default" : "outline"}
-                  className={`w-24 h-24 rounded-full relative z-10 transition-colors ${isListening ? 'bg-primary text-primary-foreground' : ''}`}
-                  onClick={() => setIsListening(!isListening)}
+                  className={`w-24 h-24 rounded-full relative z-10 transition-all active:scale-95 ${isListening ? "bg-primary text-primary-foreground" : ""}`}
+                  onClick={handleVoiceToggle}
                   data-testid="btn-voice-toggle"
                 >
-                  <Mic className={`w-8 h-8 ${isListening ? 'animate-pulse' : ''}`} />
+                  <Mic className={`w-8 h-8 ${isListening ? "animate-pulse" : ""}`} />
                 </Button>
               </div>
-              <div className="text-center space-y-1 h-10">
+
+              <div className="text-center h-8">
                 {isListening ? (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="text-sm font-medium text-primary flex items-center gap-1"
@@ -505,11 +691,12 @@ export default function Dashboard() {
                   <span className="text-sm text-muted-foreground">Tap to speak command</span>
                 )}
               </div>
+
             </CardContent>
           </Card>
         </section>
 
-        {/* Telemetry Row */}
+        {/* ── Telemetry Row ── */}
         <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4 flex flex-col gap-2">
@@ -517,14 +704,14 @@ export default function Dashboard() {
                 <Ruler className="w-3 h-3" /> Distance
               </div>
               <div className="text-2xl font-mono">{distance} <span className="text-sm text-muted-foreground">cm</span></div>
-              <Progress 
-                value={(distance / 250) * 100} 
-                className="h-1" 
-                indicatorColor={distance < 30 ? "bg-red-500" : distance < 80 ? "bg-yellow-500" : "bg-green-500"} 
+              <Progress
+                value={(distance / 250) * 100}
+                className="h-1"
+                indicatorColor={distance < 30 ? "bg-red-500" : distance < 80 ? "bg-yellow-500" : "bg-green-500"}
               />
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4 flex flex-col gap-2">
               <div className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
