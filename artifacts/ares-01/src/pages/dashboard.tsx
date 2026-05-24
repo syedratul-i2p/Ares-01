@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Sun,
   Moon,
@@ -25,7 +25,8 @@ import {
   Activity,
   Video,
   X,
-  Plug
+  Plug,
+  RotateCcw
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useInterval } from "@/hooks/use-interval";
@@ -96,6 +97,8 @@ export default function Dashboard() {
       : "";
 
   // ── 5DOF Arm ───────────────────────────────────────────────────────────────
+  const DEFAULT_JOINTS = { base: 90, shoulder: 90, elbow: 90, wrist: 90, gripper: 0 };
+
   const [joints, setJoints] = useState({
     base: 90,
     shoulder: 45,
@@ -104,6 +107,8 @@ export default function Dashboard() {
     gripper: 0
   });
 
+  const resetAnimRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const updateJoint = (joint: keyof typeof joints, delta: number) => {
     setJoints(prev => {
       const next = Math.max(0, Math.min(180, prev[joint] + delta));
@@ -111,6 +116,37 @@ export default function Dashboard() {
       // TODO: send WebSocket / HTTP command → { action: "arm", joint, angle: next }
       return { ...prev, [joint]: next };
     });
+  };
+
+  const setJointAngle = (joint: keyof typeof joints, raw: number) => {
+    const next = Math.max(0, Math.min(180, raw));
+    console.log(`${LOG_PREFIX} Arm Joint: ${joint} → ${next}° (drag)`);
+    // TODO: send WebSocket / HTTP command → { action: "arm", joint, angle: next }
+    setJoints(prev => ({ ...prev, [joint]: next }));
+  };
+
+  const handleResetArm = () => {
+    if (resetAnimRef.current) clearInterval(resetAnimRef.current);
+    console.log(`${LOG_PREFIX} Arm Reset → home position`);
+    // TODO: send WebSocket / HTTP command → { action: "arm_reset" }
+    const startValues = { ...joints };
+    const steps = 24;
+    let step = 0;
+    resetAnimRef.current = setInterval(() => {
+      step++;
+      const t = 1 - Math.pow(1 - step / steps, 3); // ease-out cubic
+      setJoints({
+        base:     Math.round(startValues.base     + (DEFAULT_JOINTS.base     - startValues.base)     * t),
+        shoulder: Math.round(startValues.shoulder + (DEFAULT_JOINTS.shoulder - startValues.shoulder) * t),
+        elbow:    Math.round(startValues.elbow    + (DEFAULT_JOINTS.elbow    - startValues.elbow)    * t),
+        wrist:    Math.round(startValues.wrist    + (DEFAULT_JOINTS.wrist    - startValues.wrist)    * t),
+        gripper:  Math.round(startValues.gripper  + (DEFAULT_JOINTS.gripper  - startValues.gripper)  * t),
+      });
+      if (step >= steps) {
+        clearInterval(resetAnimRef.current!);
+        resetAnimRef.current = null;
+      }
+    }, 16);
   };
 
   // ── AI Command ─────────────────────────────────────────────────────────────
@@ -141,6 +177,9 @@ export default function Dashboard() {
     setHistory(prev => [newCmd, ...prev].slice(0, 3));
     setCommand("");
   };
+
+  // ── Command Input Ref (mobile keyboard fix) ────────────────────────────────
+  const commandInputRef = useRef<HTMLInputElement>(null);
 
   // ── Voice ──────────────────────────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false);
@@ -530,15 +569,17 @@ export default function Dashboard() {
               </div>
 
               {/* 5DOF Arm */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">5DOF Arm Control</h4>
                 {(Object.entries(joints) as [keyof typeof joints, number][]).map(([key, value]) => (
-                  <div key={key} className="space-y-1.5">
-                    <div className="flex justify-between text-xs">
-                      <span className="capitalize">{key}</span>
-                      <span className="font-mono text-muted-foreground">{value}°</span>
+                  <div key={key} className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="capitalize font-medium">{key}</span>
+                      <span className="font-mono text-primary font-semibold tabular-nums w-12 text-right">
+                        {value}°
+                      </span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="icon"
@@ -548,7 +589,15 @@ export default function Dashboard() {
                       >
                         −
                       </Button>
-                      <Progress value={(value / 180) * 100} className="h-1.5" />
+                      <input
+                        type="range"
+                        min={0}
+                        max={180}
+                        value={value}
+                        onChange={e => setJointAngle(key, Number(e.target.value))}
+                        className="joint-slider flex-1"
+                        data-testid={`slider-arm-${key}`}
+                      />
                       <Button
                         variant="outline"
                         size="icon"
@@ -561,6 +610,18 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ))}
+
+                {/* Reset to Home */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={handleResetArm}
+                  data-testid="btn-arm-reset"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Reset Arm to Home
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -587,11 +648,17 @@ export default function Dashboard() {
               </div>
 
               <div className="flex gap-2">
-                <Input
+                <input
+                  ref={commandInputRef}
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
                   placeholder="Tell the rover what to do..."
                   value={command}
                   onChange={e => setCommand(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleSendCommand()}
+                  onClick={() => commandInputRef.current?.focus()}
+                  className="cmd-input flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground placeholder:text-muted-foreground transition-colors"
                   data-testid="input-ai-cmd"
                 />
                 <Button onClick={handleSendCommand} data-testid="btn-ai-send" className="active:scale-95 transition-transform">
