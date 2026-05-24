@@ -17,7 +17,15 @@ import {
   Thermometer,
   Zap,
   Radio,
-  Ruler
+  Ruler,
+  Wifi,
+  WifiOff,
+  Globe,
+  Loader2,
+  Activity,
+  Video,
+  X,
+  Plug
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useInterval } from "@/hooks/use-interval";
@@ -28,6 +36,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
+
+type ConnectionStatus = "disconnected" | "connecting" | "connected";
 
 export default function Dashboard() {
   const { theme, setTheme } = useTheme();
@@ -87,10 +97,60 @@ export default function Dashboard() {
   // Voice Command State
   const [isListening, setIsListening] = useState(false);
 
+  // Settings Panel State
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Device Connection State
+  const [connectionType, setConnectionType] = useState("websocket");
+  const [ipAddress, setIpAddress] = useState("");
+  const [port, setPort] = useState("");
+  const [streamUrl, setStreamUrl] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
+  const [ping, setPing] = useState<number | null>(null);
+
+  useInterval(() => {
+    if (connectionStatus === "connected") {
+      setPing(Math.floor(8 + Math.random() * 18));
+    }
+  }, 1200);
+
+  const handleConnect = () => {
+    setConnectionStatus("connecting");
+    setTimeout(() => {
+      setConnectionStatus("connected");
+      setPing(12);
+    }, 1800);
+  };
+
+  const handleDisconnect = () => {
+    setConnectionStatus("disconnected");
+    setPing(null);
+  };
+
+  const statusConfig: Record<ConnectionStatus, { label: string; color: string; dot: string }> = {
+    disconnected: {
+      label: "Disconnected",
+      color: "text-muted-foreground border-border bg-muted/40",
+      dot: "bg-muted-foreground"
+    },
+    connecting: {
+      label: "Connecting...",
+      color: "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10",
+      dot: "bg-amber-500 animate-pulse"
+    },
+    connected: {
+      label: "Connected to ESP32-S3",
+      color: "text-green-600 dark:text-green-400 border-green-500/30 bg-green-500/10",
+      dot: "bg-green-500 animate-pulse"
+    }
+  };
+
+  const currentStatus = statusConfig[connectionStatus];
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       {/* Top Nav */}
-      <header className="h-14 border-b bg-card flex items-center justify-between px-6 shrink-0">
+      <header className="h-14 border-b bg-card flex items-center justify-between px-6 shrink-0 z-10 relative">
         <div className="flex items-center gap-4">
           <h1 className="font-bold text-lg tracking-tight">ARES-01</h1>
           <span className="text-muted-foreground text-sm font-medium">Rover Mission Control</span>
@@ -100,8 +160,14 @@ export default function Dashboard() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" data-testid="button-settings">
-            <Settings className="w-4 h-4" />
+          <Button
+            variant={showSettings ? "secondary" : "ghost"}
+            size="icon"
+            onClick={() => setShowSettings(s => !s)}
+            data-testid="button-settings"
+            className="transition-colors"
+          >
+            {showSettings ? <X className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
           </Button>
           <Button 
             variant="ghost" 
@@ -113,6 +179,149 @@ export default function Dashboard() {
           </Button>
         </div>
       </header>
+
+      {/* Settings / Connection Panel */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            key="settings-panel"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden border-b bg-card/50 backdrop-blur-sm z-10"
+          >
+            <div className="max-w-[1600px] mx-auto w-full px-6 py-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Plug className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-semibold">Device Connection</h2>
+                <span className="text-xs text-muted-foreground">— ESP32-S3-WROOM CAM</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+
+                {/* 1. Connection Type */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Connection Type
+                  </label>
+                  <Select value={connectionType} onValueChange={setConnectionType}>
+                    <SelectTrigger data-testid="select-connection-type" className="bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="websocket">
+                        <span className="flex items-center gap-2">
+                          <Activity className="w-3.5 h-3.5 text-primary" />
+                          WebSocket (Recommended)
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="http">
+                        <span className="flex items-center gap-2">
+                          <Globe className="w-3.5 h-3.5" />
+                          HTTP / REST API
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 2. IP Address + Port */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Rover Address
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      className="bg-background font-mono text-sm flex-1"
+                      placeholder="e.g., 192.168.1.100"
+                      value={ipAddress}
+                      onChange={e => setIpAddress(e.target.value)}
+                      data-testid="input-ip-address"
+                    />
+                    <Input
+                      className="bg-background font-mono text-sm w-20 shrink-0"
+                      placeholder="81"
+                      value={port}
+                      onChange={e => setPort(e.target.value)}
+                      data-testid="input-port"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Stream URL */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Video className="w-3 h-3" />
+                    Video Stream Endpoint
+                  </label>
+                  <Input
+                    className="bg-background font-mono text-sm"
+                    placeholder="e.g., /stream or http://192.168.1.100:80/stream"
+                    value={streamUrl}
+                    onChange={e => setStreamUrl(e.target.value)}
+                    data-testid="input-stream-url"
+                  />
+                </div>
+
+                {/* 4. Connect Button + Status + Ping */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Connection Control
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {connectionStatus === "connected" ? (
+                      <Button
+                        variant="outline"
+                        className="shrink-0 border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/60 transition-all"
+                        onClick={handleDisconnect}
+                        data-testid="btn-disconnect"
+                      >
+                        <WifiOff className="w-4 h-4 mr-2" />
+                        Disconnect
+                      </Button>
+                    ) : (
+                      <Button
+                        className="shrink-0 transition-all"
+                        onClick={handleConnect}
+                        disabled={connectionStatus === "connecting"}
+                        data-testid="btn-connect"
+                      >
+                        {connectionStatus === "connecting" ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Wifi className="w-4 h-4 mr-2" />
+                        )}
+                        {connectionStatus === "connecting" ? "Connecting" : "Connect to Rover"}
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Status Badge + Ping */}
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md border ${currentStatus.color} transition-all duration-300`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${currentStatus.dot}`} />
+                      {currentStatus.label}
+                    </span>
+                    {ping !== null && connectionStatus === "connected" && (
+                      <motion.span
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground bg-muted/60 px-2 py-1 rounded-md border"
+                        data-testid="text-ping"
+                      >
+                        <Activity className="w-3 h-3 text-green-500" />
+                        Ping: {ping}ms
+                      </motion.span>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="flex-1 p-6 flex flex-col gap-6 max-w-[1600px] mx-auto w-full">
         {/* Video Feed */}
