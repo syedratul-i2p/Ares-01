@@ -607,42 +607,42 @@ const ArmControls = React.memo(function ArmControls({
         ))}
       </div>
 
-      <div className="flex flex-row gap-3 items-center bg-muted/20 border border-border/30 rounded-xl p-2 w-full">
+      <div className="flex flex-row gap-4 items-center bg-muted/20 border border-border/30 rounded-xl p-3.5 w-full">
         <div className="relative w-[150px] h-[110px] rounded-lg border border-border/40 bg-card overflow-hidden shrink-0 flex items-center justify-center">
           <canvas ref={canvasRef} width={150} height={110} className="w-full h-full block" />
         </div>
 
-        <div className="flex-1 w-full space-y-1">
+        <div className="flex-1 w-full space-y-3">
           {JOINT_ORDER.map(key => {
             const cfg = JOINT_CONFIG[key];
             const value = joints[key];
             return (
               <div key={key} className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 w-16 shrink-0">
+                <div className="flex items-center gap-1.5 w-20 shrink-0">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dotClass}`} />
-                  <span className="text-[11px] font-medium text-muted-foreground truncate">{cfg.label}</span>
+                  <span className="text-xs md:text-sm font-semibold text-muted-foreground truncate">{cfg.label}</span>
                 </div>
                 <button onClick={() => updateJoint(key, -stepSize)}
-                  className="h-5 w-5 shrink-0 rounded border border-border flex items-center justify-center text-[10px] bg-background hover:bg-muted active:scale-90 transition-all"
+                  className="h-6 w-6 shrink-0 rounded border border-border flex items-center justify-center text-xs bg-background hover:bg-muted active:scale-90 transition-all font-semibold"
                   data-testid={`btn-arm-${key}-dec`}>−</button>
                 <input type="range" min={0} max={180} value={value}
                   onChange={e => setJointAngle(key, Number(e.target.value))}
-                  className="joint-slider flex-1"
+                  className="joint-slider flex-1 h-2 cursor-pointer"
                   style={{ accentColor: cfg.color }}
                   data-testid={`slider-arm-${key}`} />
                 <button onClick={() => updateJoint(key, stepSize)}
-                  className="h-5 w-5 shrink-0 rounded border border-border flex items-center justify-center text-[10px] bg-background hover:bg-muted active:scale-90 transition-all"
+                  className="h-6 w-6 shrink-0 rounded border border-border flex items-center justify-center text-xs bg-background hover:bg-muted active:scale-90 transition-all font-semibold"
                   data-testid={`btn-arm-${key}-inc`}>+</button>
                 {editingJoint === key ? (
                   <input type="number" min={0} max={180} value={editValue}
                     onChange={e => setEditValue(e.target.value)}
                     onBlur={() => commitEdit(key)}
                     onKeyDown={e => { if (e.key === "Enter") commitEdit(key); if (e.key === "Escape") setEditingJoint(null); }}
-                    className="w-10 text-right font-mono text-[10px] border border-primary rounded px-1 py-0.5 bg-background focus:outline-none"
+                    className="w-12 text-right font-mono text-xs border border-primary rounded px-1 py-0.5 bg-background focus:outline-none"
                     autoFocus data-testid={`input-arm-${key}-direct`} />
                 ) : (
                   <button onClick={() => startEdit(key, value)}
-                    className={`w-10 text-right text-[11px] font-mono font-semibold tabular-nums hover:underline cursor-text shrink-0 ${cfg.accentClass}`}
+                    className={`w-12 text-right text-xs md:text-sm font-mono font-bold tabular-nums hover:underline cursor-text shrink-0 ${cfg.accentClass}`}
                     data-testid={`btn-arm-${key}-value`}>{value}°</button>
                 )}
               </div>
@@ -1038,9 +1038,9 @@ export default function Dashboard() {
         ping={ping}
       />
 
-      {/* Camera View Section (Top - Max 40% Viewport Height Budget) */}
+      {/* Camera View Section (Top - Max 50% Viewport Height Budget) */}
       <div className="w-full bg-black/20 flex justify-center items-center shrink-0 border-b border-border/40">
-        <div className="w-full max-w-none md:max-w-[calc(38dvh*16/9)] aspect-video max-h-[40vh] md:max-h-[38dvh] relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
+        <div className="w-full max-w-none md:max-w-[calc(48dvh*16/9)] aspect-video max-h-[50vh] md:max-h-[48dvh] relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
           <CameraView
             streamSrc={streamSrc}
             streamError={streamError}
@@ -1051,8 +1051,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Interactive Control Section (Middle - Max 48% Viewport Height Budget) */}
-      <div className="flex-1 flex flex-col min-h-0 max-h-[48vh] md:max-h-[48dvh] overflow-hidden bg-background">
+      {/* Interactive Control Section (Middle - Max 40% Viewport Height Budget) */}
+      <div className="flex-1 flex flex-col min-h-0 max-h-[40vh] md:max-h-[39dvh] overflow-hidden bg-background">
         
         {/* 2. MODE SELECTOR TABS */}
         <div className="shrink-0 px-4 pt-2.5 pb-1.5 bg-background z-10">
