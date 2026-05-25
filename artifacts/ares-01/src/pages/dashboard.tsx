@@ -286,7 +286,7 @@ const CameraView = React.memo(function CameraView({
           ref={imgRef}
           src={streamSrc}
           alt="ARES-01 live feed"
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover"
           onError={() => { setStreamError(true); console.warn(`[ARES-01] Camera stream error at ${streamSrc}`); }}
           data-testid="camera-feed"
         />
@@ -1050,7 +1050,7 @@ export default function Dashboard() {
 
       {/* Camera View Section (Top - Max 46dvh Viewport Height Budget) */}
       <div className="w-full bg-black/20 flex justify-center items-center shrink-0 border-b border-border/40">
-        <div className="w-full max-w-none md:max-w-[min(100%,calc(46dvh*16/9))] aspect-video max-h-[50vh] md:max-h-[46dvh] relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
+        <div className="w-full max-w-none md:max-w-[85vw] aspect-video md:aspect-auto max-h-[50vh] md:max-h-[46dvh] h-auto md:h-[46dvh] relative overflow-hidden">
           <CameraView
             streamSrc={streamSrc}
             streamError={streamError}
