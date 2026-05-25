@@ -1,1 +1,0 @@
-- [ARES-01 project](ares-01-project.md) — Mars rover dashboard; ESP32-S3 firmware pending board delivery; Firebase DB live.
