@@ -485,8 +485,11 @@ export default function Dashboard() {
       {/* ── Main Vertical Stack ── */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
-        {/* 1. CAMERA VIEW */}
-        <div className="w-full shrink-0 relative bg-black" style={{ height: "clamp(160px, 40vh, 420px)" }}>
+        {/* 1. CAMERA VIEW — 16:9 aspect ratio, capped at 55vh on large screens */}
+        <div
+          className="w-full shrink-0 relative bg-black overflow-hidden"
+          style={{ height: "min(56.25vw, 55vh)" }}
+        >
           {/* MJPEG stream */}
           {streamSrc && !streamError ? (
             <img
