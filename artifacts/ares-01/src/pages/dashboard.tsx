@@ -86,7 +86,7 @@ const Header = React.memo(function Header({
   setTheme
 }: HeaderProps) {
   return (
-    <header className="h-12 border-b bg-card/90 backdrop-blur-sm flex items-center justify-between px-5 shrink-0 z-20">
+    <header className="h-12 border-b border-white/5 bg-black/20 backdrop-blur-md flex items-center justify-between px-5 shrink-0 z-20">
       <div className="flex items-center gap-3">
         <h1 className="font-bold text-base tracking-tight">ARES-01</h1>
         <span className="text-muted-foreground text-xs font-medium hidden sm:inline">Rover Mission Control</span>
@@ -183,7 +183,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
         <motion.div key="settings"
           initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.22, ease: "easeInOut" }}
-          className="overflow-hidden border-b bg-card/70 backdrop-blur-sm z-10 shrink-0">
+          className="overflow-hidden border-b border-white/5 bg-black/40 backdrop-blur-md z-10 shrink-0">
           <div className="px-5 py-4 max-w-6xl mx-auto w-full space-y-4">
             {fbStatus === "not-configured" && (
               <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/8">
@@ -335,7 +335,7 @@ const CameraView = React.memo(function CameraView({
   const imgRef = useRef<HTMLImageElement>(null);
   return (
     <div
-      className="w-full h-full relative bg-black overflow-hidden flex items-center justify-center"
+      className="w-full h-full relative bg-black/60 backdrop-blur-md overflow-hidden flex items-center justify-center"
       style={{
         transform: "translate3d(0, 0, 0)",
         willChange: "transform"
@@ -409,47 +409,53 @@ const DPad = React.memo(function DPad({
   onStop
 }: DPadProps) {
   const dpadActive = (dir: Direction) =>
-    activeDirection === dir ? "scale-90 bg-primary! text-primary-foreground! border-primary-border! ring-4 ring-primary/40 shadow-inner" : "";
+    activeDirection === dir 
+      ? "scale-90 bg-primary border-primary text-primary-foreground shadow-inner shadow-black/30 ring-4 ring-primary/30" 
+      : "bg-white/5 hover:bg-white/10 border-white/10 hover:border-white/20 text-foreground";
 
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-2">
       <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Drive Controls</div>
       <div className="flex flex-col items-center gap-2 sm:gap-3 select-none">
-        <Button variant="secondary" size="lg"
-          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("forward")}`}
+        <button
+          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${dpadActive("forward")}`}
           onMouseDown={() => onPress("forward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("forward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-fwd">
           <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6" />
-        </Button>
+        </button>
         <div className="flex gap-2 sm:gap-3">
-          <Button variant="secondary" size="lg"
-            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("left")}`}
+          <button
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${dpadActive("left")}`}
             onMouseDown={() => onPress("left")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("left"); }} onTouchEnd={onRelease}
             data-testid="btn-move-left">
             <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-          </Button>
-          <Button variant="destructive" size="lg"
-            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all active:scale-95 ${activeDirection === "stop" ? "bg-red-800! scale-90 ring-4 ring-red-500/40 shadow-inner" : ""}`}
+          </button>
+          <button
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${
+              activeDirection === "stop" 
+                ? "bg-red-600 border-red-600 text-white shadow-inner shadow-black/30 ring-4 ring-red-500/30 scale-90" 
+                : "bg-red-500/10 hover:bg-red-500/20 border-red-500/20 text-red-400"
+            }`}
             onClick={onStop} data-testid="btn-move-stop">
             <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-          </Button>
-          <Button variant="secondary" size="lg"
-            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("right")}`}
+          </button>
+          <button
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${dpadActive("right")}`}
             onMouseDown={() => onPress("right")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("right"); }} onTouchEnd={onRelease}
             data-testid="btn-move-right">
             <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
-          </Button>
+          </button>
         </div>
-        <Button variant="secondary" size="lg"
-          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("backward")}`}
+        <button
+          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${dpadActive("backward")}`}
           onMouseDown={() => onPress("backward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("backward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-back">
           <ArrowDown className="w-5 h-5 sm:w-6 sm:h-6" />
-        </Button>
+        </button>
         <div className="h-5 mt-1">
           <AnimatePresence>
             {activeDirection && (
@@ -662,13 +668,13 @@ const ArmControls = React.memo(function ArmControls({
       <div className="grid grid-cols-4 gap-1">
         {ARM_PRESETS.map(p => (
           <button key={p.name} onClick={() => applyPreset(p)}
-            className="text-[11px] py-1 px-1 rounded-md border border-border bg-background hover:bg-muted hover:border-primary/40 transition-all text-muted-foreground hover:text-foreground font-medium"
+            className="text-[11px] py-1 px-1 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all text-muted-foreground hover:text-foreground font-medium cursor-pointer"
             data-testid={`btn-preset-${p.name.toLowerCase()}`}>{p.name}</button>
         ))}
       </div>
 
-      <div className="flex flex-row gap-2 items-center bg-muted/20 border border-border/30 rounded-xl p-1.5 py-2 w-full font-sans">
-        <div className="relative w-[130px] h-[80px] rounded-lg border border-border/40 bg-card overflow-hidden shrink-0 flex items-center justify-center">
+      <div className="flex flex-row gap-2 items-center bg-white/5 border border-white/10 rounded-xl p-1.5 py-2 w-full font-sans backdrop-blur-md shadow-lg">
+        <div className="relative w-[130px] h-[80px] rounded-lg border border-white/10 bg-black/40 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
           <canvas ref={canvasRef} width={130} height={80} className="w-full h-full block" />
         </div>
 
@@ -683,7 +689,7 @@ const ArmControls = React.memo(function ArmControls({
                   <span className="text-xs font-semibold text-muted-foreground truncate">{cfg.label}</span>
                 </div>
                 <button onClick={() => updateJoint(key, -stepSize)}
-                  className="h-5 w-5 shrink-0 rounded border border-border flex items-center justify-center text-[10px] bg-background hover:bg-muted active:scale-90 transition-all font-semibold"
+                  className="h-5 w-5 shrink-0 rounded border border-white/10 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/10 hover:border-white/20 active:scale-90 transition-all font-semibold cursor-pointer text-foreground"
                   data-testid={`btn-arm-${key}-dec`}>−</button>
                 <input type="range" min={0} max={180} value={value}
                   onChange={e => setJointAngle(key, Number(e.target.value))}
@@ -691,7 +697,7 @@ const ArmControls = React.memo(function ArmControls({
                   style={{ accentColor: cfg.color }}
                   data-testid={`slider-arm-${key}`} />
                 <button onClick={() => updateJoint(key, stepSize)}
-                  className="h-5 w-5 shrink-0 rounded border border-border flex items-center justify-center text-[10px] bg-background hover:bg-muted active:scale-90 transition-all font-semibold"
+                  className="h-5 w-5 shrink-0 rounded border border-white/10 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/10 hover:border-white/20 active:scale-90 transition-all font-semibold cursor-pointer text-foreground"
                   data-testid={`btn-arm-${key}-inc`}>+</button>
                 {editingJoint === key ? (
                   <input type="number" min={0} max={180} value={editValue}
@@ -710,16 +716,14 @@ const ArmControls = React.memo(function ArmControls({
           })}
         </div>
       </div>
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full mt-1 text-xs gap-1.5 h-7 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+      <button
+        className="w-full mt-1 text-xs gap-1.5 h-7 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center cursor-pointer shadow-md active:scale-98"
         onClick={handleResetArm}
         data-testid="btn-arm-reset-bottom"
       >
         <RotateCcw className="w-3 h-3" />
         Reset Arm to Home
-      </Button>
+      </button>
     </div>
   );
 });
@@ -1342,7 +1346,11 @@ export default function Dashboard() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="h-dvh w-screen bg-background text-foreground flex flex-col font-sans overflow-hidden justify-between">
+    <div className="h-dvh w-screen gemini-dashboard-bg text-foreground flex flex-col font-sans overflow-hidden justify-between relative">
+      
+      {/* Global background auroras */}
+      <div className="absolute top-[20%] left-[-10%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 blur-[110px] pointer-events-none float-blob-1 z-0" />
+      <div className="absolute bottom-[20%] right-[-10%] w-[400px] h-[400px] rounded-full bg-gradient-to-br from-blue-500/10 via-teal-500/10 to-indigo-500/10 blur-[120px] pointer-events-none float-blob-2 z-0" />
 
       {/* Header */}
       <Header
@@ -1381,41 +1389,54 @@ export default function Dashboard() {
       />
 
       {/* Camera View Section (Top - Max 48dvh Viewport Height Budget) */}
-      <div className="w-full gemini-bg flex justify-center items-center shrink-0 border-b border-border/40 relative overflow-hidden py-1 sm:py-1.5">
+      <div className="w-full bg-transparent flex justify-center items-center shrink-0 border-b border-white/5 relative overflow-hidden py-1 sm:py-1.5 z-10">
         <style>{`
           @keyframes geminiGradient {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
           }
+          @keyframes cosmicShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
           @keyframes float1 {
             0% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(30px, -20px) scale(1.1); }
-            66% { transform: translate(-20px, 15px) scale(0.95); }
+            33% { transform: translate(40px, -30px) scale(1.15); }
+            66% { transform: translate(-30px, 20px) scale(0.9); }
             100% { transform: translate(0px, 0px) scale(1); }
           }
           @keyframes float2 {
             0% { transform: translate(0px, 0px) scale(1.05); }
-            50% { transform: translate(-30px, 25px) scale(0.95); }
+            50% { transform: translate(-40px, 35px) scale(0.85); }
             100% { transform: translate(0px, 0px) scale(1.05); }
           }
-          .gemini-bg {
-            background: linear-gradient(-45deg, #0f0c20, #15103c, #051c2c, #1f0b2a, #0c152a);
-            background-size: 300% 300%;
-            animation: geminiGradient 16s ease infinite;
+          @keyframes float3 {
+            0% { transform: translate(0px, 0px) scale(0.9); }
+            50% { transform: translate(35px, -40px) scale(1.1); }
+            100% { transform: translate(0px, 0px) scale(0.9); }
+          }
+          .gemini-dashboard-bg {
+            background: linear-gradient(-45deg, #080512, #0d0621, #030e1a, #110518, #040915);
+            background-size: 400% 400%;
+            animation: cosmicShift 20s ease-in-out infinite;
           }
           .float-blob-1 {
-            animation: float1 18s ease-in-out infinite;
+            animation: float1 22s ease-in-out infinite;
           }
           .float-blob-2 {
-            animation: float2 22s ease-in-out infinite;
+            animation: float2 26s ease-in-out infinite;
+          }
+          .float-blob-3 {
+            animation: float3 30s ease-in-out infinite;
           }
           @keyframes voiceWave {
-            0%, 100% { transform: scaleY(0.25); }
-            50% { transform: scaleY(1.2); }
+            0%, 100% { transform: scaleY(0.35); }
+            50% { transform: scaleY(1.35); }
           }
           .animate-voice-wave {
-            animation-name: voiceWave;
+            animation: voiceWave 1.2s ease-in-out infinite;
             transform-origin: center;
           }
           @keyframes progressGlow {
@@ -1430,9 +1451,9 @@ export default function Dashboard() {
         `}</style>
 
         {/* Ambient Auroras */}
-        <div className="absolute -top-10 -left-10 w-72 h-72 rounded-full bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 blur-[80px] pointer-events-none float-blob-1" />
-        <div className="absolute -bottom-16 -right-16 w-80 h-80 rounded-full bg-gradient-to-br from-blue-500/20 via-teal-500/20 to-indigo-500/20 blur-[90px] pointer-events-none float-blob-2" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] rounded-full bg-gradient-to-tr from-purple-600/5 via-blue-600/5 to-teal-500/5 blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: "8s" }} />
+        <div className="absolute -top-10 -left-10 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-indigo-500/15 via-purple-500/15 to-pink-500/15 blur-[90px] pointer-events-none float-blob-1" />
+        <div className="absolute -bottom-16 -right-16 w-[400px] h-[400px] rounded-full bg-gradient-to-br from-blue-500/15 via-teal-500/15 to-indigo-500/15 blur-[100px] pointer-events-none float-blob-2" />
+        <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full bg-gradient-to-tr from-purple-600/10 via-blue-600/10 to-teal-500/10 blur-[100px] pointer-events-none float-blob-3 animate-pulse" style={{ animationDuration: "12s" }} />
 
         {/* Central Widescreen Camera Frame */}
         <div className="w-full max-w-none md:max-w-[94vw] aspect-video md:aspect-auto max-h-[50vh] md:max-h-[48dvh] h-auto md:h-[48dvh] relative overflow-hidden z-10 shadow-2xl border border-white/5 rounded-lg">
@@ -1447,11 +1468,11 @@ export default function Dashboard() {
       </div>
 
       {/* Interactive Control Section (Middle - Max 42dvh Viewport Height Budget) */}
-      <div className="flex-1 flex flex-col min-h-0 max-h-[44vh] md:max-h-[42dvh] overflow-hidden bg-background">
+      <div className="flex-1 flex flex-col min-h-0 max-h-[44vh] md:max-h-[42dvh] overflow-hidden bg-transparent z-10 animate-none">
         
         {/* 2. MODE SELECTOR TABS */}
-        <div className="shrink-0 px-4 pt-2.5 pb-1.5 bg-background z-10">
-          <div className="relative flex rounded-xl bg-muted/50 border border-border/50 p-1 gap-0.5 max-w-xl mx-auto">
+        <div className="shrink-0 px-4 pt-2.5 pb-1.5 bg-transparent z-10">
+          <div className="relative flex rounded-xl bg-white/5 backdrop-blur-md border border-white/10 p-1 gap-0.5 max-w-xl mx-auto shadow-xl">
             {CONTROL_TABS.map(tab => (
               <button key={tab.id} onClick={() => setControlMode(tab.id)}
                 className={`relative flex flex-1 items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg z-10 transition-colors duration-150 select-none ${
@@ -1459,7 +1480,7 @@ export default function Dashboard() {
                 }`}
                 data-testid={`tab-${tab.id}`}>
                 {controlMode === tab.id && (
-                  <motion.div layoutId="tab-pill" className="absolute inset-0 bg-background rounded-lg shadow-sm"
+                  <motion.div layoutId="tab-pill" className="absolute inset-0 bg-white/10 border border-white/15 rounded-lg shadow-md"
                     transition={{ type: "spring", stiffness: 500, damping: 38 }} />
                 )}
                 <tab.icon className="w-3.5 h-3.5 relative z-10 shrink-0" />
@@ -1479,7 +1500,7 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className="px-4 py-1.5 h-full overflow-hidden flex items-center justify-center">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-5xl w-full mx-auto items-center justify-items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-4xl w-full p-4 sm:p-5 bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 shadow-2xl items-center justify-items-center max-h-full overflow-y-auto">
                   {/* LEFT: Drive D-Pad */}
                   <div className="flex items-center justify-center w-full">
                     <DPad
@@ -1517,12 +1538,12 @@ export default function Dashboard() {
               <motion.div key="ai"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="p-3 overflow-hidden h-full flex flex-col justify-center animate-none">
-                <div className="max-w-2xl w-full mx-auto flex flex-col gap-1.5">
+                className="p-3 overflow-hidden h-full flex flex-col items-center justify-center animate-none">
+                <div className="max-w-2xl w-full p-4 sm:p-5 bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 shadow-2xl flex flex-col gap-2 max-h-full overflow-hidden animate-none">
                   <div className="text-center">
                     <div className="text-xs sm:text-sm font-semibold">Autonomous Directive</div>
                     <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                      Auto-detect language (English/Bengali) → Firebase <code className="font-mono text-[10px] bg-muted px-1 rounded">ares01/autonomous/action</code>
+                      Auto-detect language (English/Bengali) → Firebase <code className="font-mono text-[10px] bg-white/5 border border-white/10 px-1 rounded">ares01/autonomous/action</code>
                     </div>
                   </div>
 
@@ -1534,10 +1555,10 @@ export default function Dashboard() {
                       onKeyDown={e => e.key === "Enter" && !isProcessing && handleSendCommand()}
                       onClick={() => commandInputRef.current?.focus()}
                       disabled={isProcessing}
-                      className="cmd-input flex-1 h-9 rounded-lg border border-input bg-background px-4 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="cmd-input flex-1 h-9 rounded-lg border border-white/10 bg-white/5 px-4 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-md"
                       data-testid="input-ai-cmd" />
                     <Button onClick={handleSendCommand} data-testid="btn-ai-send" disabled={isProcessing || !command.trim()}
-                      className="h-9 px-4 active:scale-95 transition-transform shrink-0">
+                      className="h-9 px-4 active:scale-95 transition-transform shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-none shadow-md shadow-indigo-500/10">
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
@@ -1546,7 +1567,7 @@ export default function Dashboard() {
                     {["go forward", "turn left", "pick ball", "scan area", "stop", "arm home",
                       "সামনে যাও", "বামে যাও", "বল তোলো", "থামো"].map(chip => (
                       <button key={chip} onClick={() => setCommand(chip)}
-                        className="text-[9px] px-2 py-0.5 rounded-full border border-border bg-muted/50 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all font-medium">
+                        className="text-[9px] px-2.5 py-1 rounded-full border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20 text-zinc-300 hover:text-white transition-all font-medium backdrop-blur-sm">
                         {chip}
                       </button>
                     ))}
@@ -1557,7 +1578,7 @@ export default function Dashboard() {
                       <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Command Log</div>
                       <div className="flex items-center justify-between h-4">
                         {isProcessing ? (
-                          <div className="flex items-center gap-1 text-[9px] font-mono text-primary font-semibold tracking-wider animate-pulse">
+                          <div className="flex items-center gap-1 text-[9px] font-mono text-indigo-400 font-semibold tracking-wider animate-pulse">
                             <Loader2 className="w-2.5 h-2.5 animate-spin" />
                             <span>AI PROCESSING...</span>
                           </div>
@@ -1568,9 +1589,9 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-                    <div className="relative w-full h-0.5 bg-muted rounded-full overflow-hidden mb-1.5 shrink-0">
+                    <div className="relative w-full h-0.5 bg-white/5 border border-white/5 rounded-full overflow-hidden mb-1.5 shrink-0">
                       {isProcessing && (
-                        <div className="absolute inset-y-0 bg-gradient-to-r from-primary/40 via-primary to-indigo-500/40 w-1/2 rounded-full animate-progress-glow" />
+                        <div className="absolute inset-y-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-pink-500 w-1/2 rounded-full animate-progress-glow" />
                       )}
                     </div>
                     <div className="space-y-1.5 max-h-[80px] overflow-y-auto pr-1">
@@ -1586,14 +1607,14 @@ export default function Dashboard() {
                               className={`flex flex-col ${isUser ? "items-end" : "items-start"} w-full`}
                             >
                               <div
-                                className={`max-w-[90%] rounded-xl px-2.5 py-1.5 text-[10px] sm:text-[11px] leading-normal shadow-sm border ${
+                                className={`max-w-[90%] rounded-xl px-3 py-2 text-[10px] sm:text-[11px] leading-normal shadow-md border ${
                                   isUser
-                                    ? "bg-primary/10 border-primary/20 rounded-tr-none text-right"
-                                    : "bg-muted/80 border-border rounded-tl-none text-left"
+                                    ? "bg-indigo-500/10 border-indigo-500/20 rounded-tr-none text-right shadow-indigo-500/5 text-indigo-100"
+                                    : "bg-white/5 backdrop-blur-sm border-white/10 rounded-tl-none text-left text-zinc-100"
                                 }`}
                               >
                                 <div className="flex items-center gap-3 mb-0.5 justify-between">
-                                  <span className={`text-[8px] font-bold tracking-wider uppercase ${isUser ? "text-primary" : "text-indigo-400 flex items-center gap-0.5"}`}>
+                                  <span className={`text-[8px] font-bold tracking-wider uppercase ${isUser ? "text-indigo-400" : "text-purple-400 flex items-center gap-0.5"}`}>
                                     {!isUser && <Bot className="w-2 h-2" />}
                                     {isUser ? "Operator" : "ARES-01"}
                                   </span>
@@ -1602,7 +1623,7 @@ export default function Dashboard() {
                                 <div className={`break-words ${isUser ? "text-right" : "text-left"}`}>{cmd.text}</div>
                                 {isUser && cmd.action && (
                                   <div className="mt-1 flex justify-end">
-                                    <span className="text-[7.5px] font-mono bg-primary/25 text-primary px-1 py-0.5 rounded leading-none">
+                                    <span className="text-[7.5px] font-mono bg-indigo-500/25 text-indigo-300 px-1 py-0.5 rounded leading-none">
                                       {cmd.action}
                                     </span>
                                   </div>
@@ -1625,8 +1646,8 @@ export default function Dashboard() {
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className="h-full flex items-center justify-center p-3 overflow-hidden">
 
-                <div className="flex flex-col items-center justify-center p-4 space-y-4 bg-card/40 rounded-xl border border-border/50 w-full max-w-md max-h-[42dvh] overflow-hidden">
-                  <div className="flex items-center gap-3 w-full max-w-xs">
+                <div className="flex flex-col items-center justify-center p-5 space-y-5 bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 w-full max-w-md max-h-[42dvh] overflow-hidden shadow-2xl relative animate-none">
+                  <div className="flex items-center gap-3 w-full max-w-xs z-10">
                     <label htmlFor="voice-lang" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                       Select Language:
                     </label>
@@ -1634,7 +1655,7 @@ export default function Dashboard() {
                       id="voice-lang"
                       value={voiceLanguage}
                       onChange={e => setVoiceLanguage(e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm bg-background border border-border/80 rounded-md focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer text-foreground"
+                      className="w-full px-3 py-1.5 text-sm bg-background/50 backdrop-blur-md border border-white/10 rounded-md focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer text-foreground"
                     >
                       <option value="bn-BD">বাংলা (Bangla)</option>
                       <option value="en-US">English</option>
@@ -1642,21 +1663,23 @@ export default function Dashboard() {
                   </div>
 
                   {/* Active High-Fidelity Audio Waveform Effect */}
-                  <div className={`flex items-center justify-center gap-1.5 h-12 transition-opacity duration-300 ${isListening ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}>
-                    <div className="w-1.5 h-6 bg-red-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-1.5 h-10 bg-red-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-1.5 h-12 bg-red-500 rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-8 bg-red-500 rounded-full animate-bounce [animation-delay:-0.4s]"></div>
-                    <div className="w-1.5 h-5 bg-red-500 rounded-full animate-bounce [animation-delay:-0.2s]"></div>
+                  <div className={`flex items-center justify-center gap-2 h-16 transition-all duration-300 z-10 ${isListening ? 'opacity-100 scale-100' : 'opacity-35 scale-95 pointer-events-none'}`}>
+                    <div className={`w-1.5 h-6 bg-gradient-to-t from-cyan-400 via-blue-500 to-indigo-500 rounded-full transition-transform ${isListening ? 'animate-voice-wave' : 'scale-y-[0.3]'}`} style={{ animationDelay: "-0.55s", animationDuration: "0.85s" }} />
+                    <div className={`w-1.5 h-10 bg-gradient-to-t from-blue-500 via-indigo-500 to-purple-500 rounded-full transition-transform ${isListening ? 'animate-voice-wave' : 'scale-y-[0.3]'}`} style={{ animationDelay: "-0.3s", animationDuration: "1.05s" }} />
+                    <div className={`w-1.5 h-14 bg-gradient-to-t from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-transform ${isListening ? 'animate-voice-wave' : 'scale-y-[0.3]'}`} style={{ animationDelay: "-0.15s", animationDuration: "1.25s" }} />
+                    <div className={`w-1.5 h-16 bg-gradient-to-t from-purple-500 via-pink-500 to-rose-400 rounded-full transition-transform ${isListening ? 'animate-voice-wave' : 'scale-y-[0.3]'}`} style={{ animationDelay: "0s", animationDuration: "0.95s" }} />
+                    <div className={`w-1.5 h-12 bg-gradient-to-t from-pink-500 via-rose-400 to-amber-400 rounded-full transition-transform ${isListening ? 'animate-voice-wave' : 'scale-y-[0.3]'}`} style={{ animationDelay: "-0.45s", animationDuration: "1.15s" }} />
+                    <div className={`w-1.5 h-8 bg-gradient-to-t from-rose-400 via-amber-400 to-teal-400 rounded-full transition-transform ${isListening ? 'animate-voice-wave' : 'scale-y-[0.3]'}`} style={{ animationDelay: "-0.2s", animationDuration: "0.75s" }} />
+                    <div className={`w-1.5 h-5 bg-gradient-to-t from-teal-400 via-cyan-400 to-blue-500 rounded-full transition-transform ${isListening ? 'animate-voice-wave' : 'scale-y-[0.3]'}`} style={{ animationDelay: "-0.1s", animationDuration: "1.35s" }} />
                   </div>
 
                   <button
                     id="voice-toggle-btn"
                     onClick={handleVoiceToggle}
-                    className={`w-full max-w-xs py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                    className={`w-full max-w-xs py-3 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg border border-white/10 z-10 cursor-pointer ${
                       isListening 
-                        ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse' 
-                        : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                        ? 'bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 text-white animate-pulse shadow-red-500/30' 
+                        : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-indigo-500/30'
                     }`}
                   >
                     {isListening ? (
@@ -1671,7 +1694,7 @@ export default function Dashboard() {
                   </button>
                   
                   {/* Live Transcript Display Box */}
-                  <div className="w-full text-center min-h-[1.5rem]">
+                  <div className="w-full text-center min-h-[1.5rem] z-10">
                     <p className="text-xs text-muted-foreground italic" id="voice-transcript-preview">
                       {isListening ? "Listening..." : "Click button to speak"}
                     </p>
