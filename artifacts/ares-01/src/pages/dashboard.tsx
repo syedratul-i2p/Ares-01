@@ -1385,8 +1385,36 @@ export default function Dashboard() {
       />
 
       {/* Camera View Section (Top - Max 48dvh Viewport Height Budget) */}
-      <div className="w-full flex justify-center items-center shrink-0 border-b border-border/40 relative overflow-hidden py-1 sm:py-1.5 z-10 bg-muted/30">
+      {/* Camera View Section (Top - Max 48dvh Viewport Height Budget) */}
+      <div className="w-full gemini-bg flex justify-center items-center shrink-0 border-b border-border/40 relative overflow-hidden py-1 sm:py-1.5 z-10">
         <style>{`
+          @keyframes geminiGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          @keyframes float1 {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -20px) scale(1.1); }
+            66% { transform: translate(-20px, 15px) scale(0.95); }
+            100% { transform: translate(0px, 0px) scale(1); }
+          }
+          @keyframes float2 {
+            0% { transform: translate(0px, 0px) scale(1.05); }
+            50% { transform: translate(-30px, 25px) scale(0.95); }
+            100% { transform: translate(0px, 0px) scale(1.05); }
+          }
+          .gemini-bg {
+            background: linear-gradient(-45deg, #0f0c20, #15103c, #051c2c, #1f0b2a, #0c152a);
+            background-size: 300% 300%;
+            animation: geminiGradient 16s ease infinite;
+          }
+          .float-blob-1 {
+            animation: float1 18s ease-in-out infinite;
+          }
+          .float-blob-2 {
+            animation: float2 22s ease-in-out infinite;
+          }
           @keyframes progressGlow {
             0% { left: -50%; }
             100% { left: 100%; }
@@ -1398,8 +1426,13 @@ export default function Dashboard() {
           }
         `}</style>
 
+        {/* Ambient Auroras */}
+        <div className="absolute -top-10 -left-10 w-72 h-72 rounded-full bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 blur-[80px] pointer-events-none float-blob-1" />
+        <div className="absolute -bottom-16 -right-16 w-80 h-80 rounded-full bg-gradient-to-br from-blue-500/20 via-teal-500/20 to-indigo-500/20 blur-[90px] pointer-events-none float-blob-2" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] rounded-full bg-gradient-to-tr from-purple-600/5 via-blue-600/5 to-teal-500/5 blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: "8s" }} />
+
         {/* Central Widescreen Camera Frame */}
-        <div className="w-full max-w-none md:max-w-[94vw] aspect-video md:aspect-auto max-h-[50vh] md:max-h-[48dvh] h-auto md:h-[48dvh] relative overflow-hidden z-10 shadow-2xl border border-border/50 rounded-lg">
+        <div className="w-full max-w-none md:max-w-[94vw] aspect-video md:aspect-auto max-h-[50vh] md:max-h-[48dvh] h-auto md:h-[48dvh] relative overflow-hidden z-10 shadow-2xl border border-white/5 rounded-lg">
           <CameraView
             streamSrc={streamSrc}
             streamError={streamError}
