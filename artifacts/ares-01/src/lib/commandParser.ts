@@ -7,7 +7,7 @@
 
 export type ParsedCommand =
   | "FORWARD" | "BACKWARD" | "LEFT" | "RIGHT" | "STOP"
-  | "PICK"    | "DROP"     | "SCAN" | "HOME"   | "ROTATE"
+  | "PICK_BALL" | "DROP"     | "SCAN" | "HOME"   | "ROTATE"
   | "UNKNOWN";
 
 interface CommandRule {
@@ -24,57 +24,65 @@ const COMMAND_RULES: CommandRule[] = [
     action: "FORWARD",
     description: "Move rover forward",
     patterns: [
-      /\b(forward|go forward|move forward|ahead|straight|samne|age|agiye|samne jao|age jao|agiye jao|সামনে|এগিয়ে)\b/i,
+      /\b(forward|go forward|move forward|ahead|straight|samne|age|agiye|samne jao|age jao|agiye jao)\b/i,
+      /(সামনে যাও|সামনে যান|এগিয়ে যাও|এগিয়ে যান|সামনে|এগিয়ে)/i,
     ],
   },
   {
     action: "BACKWARD",
     description: "Move rover backward",
     patterns: [
-      /\b(backward|back|reverse|go back|move back|piche|pechone|piche jao|pechone jao|পিছনে|পেছনে)\b/i,
+      /\b(backward|back|reverse|go back|move back|piche|pechone|piche jao|pechone jao)\b/i,
+      /(পেছনে যাও|পেছনে যান|পিছনে যাও|পিছনে যান|পেছনে|পিছনে|পেছাও)/i,
     ],
   },
   {
     action: "LEFT",
     description: "Turn rover left",
     patterns: [
-      /\b(left|turn left|go left|rotate left|bame|bam|bame jao|বামে|বাম)\b/i,
+      /\b(left|turn left|go left|rotate left|bame|bam|bame jao)\b/i,
+      /(বামে যাও|বামে যান|বামে|বাম)/i,
     ],
   },
   {
     action: "RIGHT",
     description: "Turn rover right",
     patterns: [
-      /\b(right|turn right|go right|rotate right|daine|dan|daine jao|ডানে|ডান)\b/i,
+      /\b(right|turn right|go right|rotate right|daine|dan|daine jao)\b/i,
+      /(ডানে যাও|ডানে যান|ডানে|ডান)/i,
     ],
   },
   {
     action: "STOP",
     description: "Stop the rover",
     patterns: [
-      /\b(stop|halt|brake|freeze|thamo|dara|thak|থামো|দাঁড়া)\b/i,
+      /\b(stop|halt|brake|freeze|thamo|dara|thak)\b/i,
+      /(থামো|থামুন|দাঁড়াও|দাঁড়াও|দাঁড়ান|দাঁড়ান)/i,
     ],
   },
   {
-    action: "PICK",
+    action: "PICK_BALL",
     description: "Pick up object with arm",
     patterns: [
-      /\b(pick|pick up|grab|catch|lift|tolo|dhoro|তোলো|ধরো|ধর)\b/i,
+      /\b(pick|pick up|grab|catch|lift|tolo|dhoro)\b/i,
       /\bpick\s+(ball|object|item|box)\b/i,
+      /(হাত তোলো|হাত তোল|হাত তুলুন|বল তোলো|বল তোল|বল তুলুন)/i,
     ],
   },
   {
     action: "DROP",
     description: "Drop / release object",
     patterns: [
-      /\b(drop|place|release|put down|namo|rakho|ছাড়ো|রাখো|নামো)\b/i,
+      /\b(drop|place|release|put down|namo|rakho)\b/i,
+      /(ছাড়ো|রাখো|নামো|ছাড়ো)/i,
     ],
   },
   {
     action: "SCAN",
     description: "Scan surroundings with camera / AI",
     patterns: [
-      /\b(scan|detect|search|look around|find|scan area|khojo|dekho|দেখো|খোঁজো|স্ক্যান)\b/i,
+      /\b(scan|detect|search|look around|find|scan area|khojo|dekho)\b/i,
+      /(দেখো|দেখুন|খোঁজো|খুঁজুন|স্ক্যান)/i,
     ],
   },
   {
@@ -88,7 +96,8 @@ const COMMAND_RULES: CommandRule[] = [
     action: "ROTATE",
     description: "Rotate base or vehicle in place",
     patterns: [
-      /\b(rotate|spin|turn around|ghura|ghurao|ঘোরাও|ঘুরাও)\b/i,
+      /\b(rotate|spin|turn around|ghura|ghurao)\b/i,
+      /(ঘোরাও|ঘুরাও|ঘোরান|ঘুরান)/i,
     ],
   },
 ];
@@ -147,7 +156,7 @@ export const ACTION_LABELS: Record<ParsedCommand, string> = {
   LEFT:     "Turning Left",
   RIGHT:    "Turning Right",
   STOP:     "Stopping",
-  PICK:     "Arm: Picking Up",
+  PICK_BALL: "Arm: Picking Up Ball",
   DROP:     "Arm: Dropping",
   SCAN:     "AI Scan: Detecting Objects",
   HOME:     "Arm: Returning Home",

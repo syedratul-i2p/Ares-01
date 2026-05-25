@@ -96,7 +96,7 @@ export interface ArmAngles {
 let lastArmWriteTime = 0;
 let pendingArmAngles: ArmAngles | null = null;
 let armThrottleTimeout: ReturnType<typeof setTimeout> | null = null;
-const ARM_THROTTLE_LIMIT_MS = 80; // 12.5Hz max frequency for ESP32/PCA9685 loop
+const ARM_THROTTLE_LIMIT_MS = 50; // 20Hz max frequency for ESP32/PCA9685 loop
 
 export async function setArmAngles(angles: ArmAngles): Promise<void> {
   const r = dbRef("ares01/arm/angles");
@@ -141,10 +141,11 @@ export async function setArmAngles(angles: ArmAngles): Promise<void> {
 // ─── Autonomous Command ───────────────────────────────────────────────────────
 
 export interface AutonomousAction {
-  command: string;   // parsed machine command e.g. "PICK", "SCAN", "FORWARD"
-  raw: string;       // original human text
-  language: string;  // "en" | "bn"
-  timestamp: number; // Date.now()
+  command?: string;   // parsed machine command e.g. "PICK", "SCAN", "FORWARD"
+  action?: string;    // alternative action name e.g. "PICK_BALL"
+  raw: string;        // original human text
+  language?: string;  // "en" | "bn"
+  timestamp: number;  // Date.now()
 }
 
 export async function sendAutonomousCommand(action: AutonomousAction): Promise<void> {

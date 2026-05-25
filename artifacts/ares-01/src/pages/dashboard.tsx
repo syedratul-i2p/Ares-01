@@ -9,7 +9,6 @@ import { useTheme } from "@/components/theme-provider";
 import { useInterval } from "@/hooks/use-interval";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,15 +21,25 @@ import {
   type DriveDirection,
   type ArmAngles,
 } from "@/lib/firebase";
-import { parseCommand, ACTION_LABELS } from "@/lib/commandParser";
+import { parseCommand, ACTION_LABELS, type ParsedCommand } from "@/lib/commandParser";
 
 // ─── Types & Constants ────────────────────────────────────────────────────────
 
 type RoverConnectionStatus = "disconnected" | "connecting" | "connected";
-type Direction = "forward" | "backward" | "left" | "right";
+type Direction = "forward" | "backward" | "left" | "right" | "stop";
 type ControlMode = "manual" | "ai" | "voice";
 
+interface LogMessage {
+  id: number;
+  sender: "user" | "system";
+  text: string;
+  action?: string;
+  time: string;
+  status: "ok" | "warn" | "info";
+}
+
 const LOG = "[ARES-01]";
+const COOLDOWN_TIME = 2000;
 
 const CONTROL_TABS: { id: ControlMode; label: string; icon: React.ElementType }[] = [
   { id: "manual", label: "Manual Control", icon: Gamepad2 },
@@ -400,7 +409,7 @@ const DPad = React.memo(function DPad({
   onStop
 }: DPadProps) {
   const dpadActive = (dir: Direction) =>
-    activeDirection === dir ? "scale-90 opacity-60 ring-2 ring-primary/40" : "";
+    activeDirection === dir ? "scale-90 bg-primary! text-primary-foreground! border-primary-border! ring-4 ring-primary/40 shadow-inner" : "";
 
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-2">
@@ -422,7 +431,7 @@ const DPad = React.memo(function DPad({
             <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </Button>
           <Button variant="destructive" size="lg"
-            className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all active:scale-95"
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all active:scale-95 ${activeDirection === "stop" ? "bg-red-800! scale-90 ring-4 ring-red-500/40 shadow-inner" : ""}`}
             onClick={onStop} data-testid="btn-move-stop">
             <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
           </Button>
@@ -794,6 +803,164 @@ export default function Dashboard() {
     setDriveDirection("STOP");
   }, []);
 
+  // ── Keyboard Controls for Rover D-Pad
+  // ── Keyboard Controls for Rover D-Pad
+  const activeKeysRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const validKeys = [
+      "PageUp", "PageDown", "Home", "End",
+      "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+      "w", "a", "s", "d", "W", "A", "S", "D",
+      " "
+    ];
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const key = event.key;
+      if (!validKeys.includes(key)) return;
+
+      // Ignore keyboard controls if user is currently typing inside input or textarea
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (event.repeat || activeKeysRef.current.has(key)) return;
+
+      activeKeysRef.current.add(key);
+
+      let dir: Direction;
+      let fbDir: DriveDirection;
+      switch (key) {
+        case "PageUp":
+        case "ArrowUp":
+        case "w":
+        case "W":
+          dir = "forward";
+          fbDir = "FORWARD";
+          break;
+        case "PageDown":
+        case "ArrowDown":
+        case "s":
+        case "S":
+          dir = "backward";
+          fbDir = "BACKWARD";
+          break;
+        case "Home":
+        case "ArrowLeft":
+        case "a":
+        case "A":
+          dir = "left";
+          fbDir = "LEFT";
+          break;
+        case "End":
+        case "ArrowRight":
+        case "d":
+        case "D":
+          dir = "right";
+          fbDir = "RIGHT";
+          break;
+        case " ":
+          dir = "stop";
+          fbDir = "STOP";
+          break;
+        default:
+          return;
+      }
+
+      setActiveDirection(dir);
+      console.log(`${LOG} Keyboard Drive: ${fbDir}`);
+      setDriveDirection(fbDir);
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      const key = event.key;
+      if (!validKeys.includes(key)) return;
+
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (activeKeysRef.current.has(key)) {
+        activeKeysRef.current.delete(key);
+        
+        if (key === " " || activeKeysRef.current.size === 0) {
+          setActiveDirection(null);
+          console.log(`${LOG} Keyboard Drive: STOP`);
+          setDriveDirection("STOP");
+        } else {
+          // Transition to the next remaining active key
+          const remainingKeys = Array.from(activeKeysRef.current);
+          const nextKey = remainingKeys[remainingKeys.length - 1];
+          let dir: Direction;
+          let fbDir: DriveDirection;
+          switch (nextKey) {
+            case "PageUp":
+            case "ArrowUp":
+            case "w":
+            case "W":
+              dir = "forward";
+              fbDir = "FORWARD";
+              break;
+            case "PageDown":
+            case "ArrowDown":
+            case "s":
+            case "S":
+              dir = "backward";
+              fbDir = "BACKWARD";
+              break;
+            case "Home":
+            case "ArrowLeft":
+            case "a":
+            case "A":
+              dir = "left";
+              fbDir = "LEFT";
+              break;
+            case "End":
+            case "ArrowRight":
+            case "d":
+            case "D":
+              dir = "right";
+              fbDir = "RIGHT";
+              break;
+            case " ":
+              dir = "stop";
+              fbDir = "STOP";
+              break;
+            default:
+              return;
+          }
+          setActiveDirection(dir);
+          setDriveDirection(fbDir);
+        }
+      }
+    };
+
+    const handleBlur = () => {
+      if (activeKeysRef.current.size > 0) {
+        activeKeysRef.current.clear();
+        setActiveDirection(null);
+        console.log(`${LOG} Keyboard Drive: STOP (window blur)`);
+        setDriveDirection("STOP");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
+
   // ── 5DOF Arm
   const [joints, setJoints] = useState<ArmAngles>({ base: 90, shoulder: 45, elbow: 120, wrist: 90, gripper: 0 });
   const resetAnimRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -855,79 +1022,278 @@ export default function Dashboard() {
     setEditingJoint(null);
   }, [editValue, setJointAngle]);
 
-  // ── AI Command
+  // ── AI Command / Voice Processing State
+  const [isProcessing, setIsProcessing] = useState(false);
   const [command, setCommand] = useState("");
-  const [language, setLanguage] = useState("en");
-  const [history, setHistory] = useState<{ id: number; text: string; action: string; time: string; status: "ok" | "warn" }[]>([
-    { id: 1, text: "Move forward 2 meters and scan for obstacles", action: "FORWARD → SCAN", time: "10:42:15 AM", status: "ok" },
-    { id: 2, text: "Rotate base 45 degrees left",                  action: "ROTATE → LEFT",  time: "10:40:02 AM", status: "ok" },
-    { id: 3, text: "Initialize YOLOv8 object detection",           action: "SCAN",            time: "10:38:55 AM", status: "ok" },
+  const [history, setHistory] = useState<LogMessage[]>([
+    { id: 1, sender: "user", text: "Move forward 2 meters and scan for obstacles", action: "FORWARD → SCAN", time: "10:42:15 AM", status: "ok" },
+    { id: 2, sender: "system", text: "ARES-01: Position updated (+2.0m). Executing YOLOv8 environment scan.", time: "10:42:16 AM", status: "ok" },
+    { id: 3, sender: "user", text: "Rotate base 45 degrees left", action: "ROTATE → LEFT", time: "10:40:02 AM", status: "ok" },
+    { id: 4, sender: "system", text: "ARES-01: Base rotated 45° CCW. Servo torque nominal.", time: "10:40:03 AM", status: "ok" },
   ]);
   const commandInputRef = useRef<HTMLInputElement>(null);
 
+  const getSystemResponse = (action: string, commandText: string): string => {
+    const upper = action.toUpperCase();
+    if (upper.includes("FORWARD")) return "ARES-01: Initiating forward propulsion. Speed set to nominal.";
+    if (upper.includes("BACKWARD")) return "ARES-01: Reversing drivetrain. Rear sonar alert check enabled.";
+    if (upper.includes("LEFT")) return "ARES-01: Executing counter-clockwise turn. Monitoring yaw rates.";
+    if (upper.includes("RIGHT")) return "ARES-01: Executing clockwise turn. Monitoring yaw rates.";
+    if (upper.includes("STOP")) return "ARES-01: Emergency stop command processed. Drivetrain locked.";
+    if (upper.includes("ARM") || upper.includes("PICK") || upper.includes("DROP")) return "ARES-01: Actuating robotic arm servos. Maintaining payload stability.";
+    if (upper.includes("SCAN")) return "ARES-01: Running environmental scan via camera. Parsing object data.";
+    return `ARES-01: Command "${commandText}" received. Action: ${action || "UNKNOWN"}. Status: Nominal.`;
+  };
+
   const handleSendCommand = useCallback(async () => {
     if (!command.trim()) return;
-    const result = parseCommand(command);
+    const cmdText = command;
+    setCommand("");
+
+    // Auto detect language: Bengali characters reside in range \u0980 to \u09FF
+    const isBengali = /[\u0980-\u09FF]/.test(cmdText);
+    const detectedLang = isBengali ? "bn" : "en";
+
+    const result = parseCommand(cmdText);
     const label = ACTION_LABELS[result.action];
-    console.log(`${LOG} AI Command [${language}]: "${command}" → ${result.action} (${result.confidence})`);
+    console.log(`${LOG} AI Command [Auto-Detect: ${detectedLang}]: "${cmdText}" → ${result.action} (${result.confidence})`);
 
-    await sendAutonomousCommand({
-      command: result.action,
-      raw: command,
-      language,
-      timestamp: Date.now(),
-    });
-
-    setHistory(prev => [{
+    const userMsg: LogMessage = {
       id: Date.now(),
-      text: command,
+      sender: "user",
+      text: cmdText,
       action: `${result.action} — ${label}`,
       time: new Date().toLocaleTimeString(),
-      status: result.action === "UNKNOWN" ? "warn" as const : "ok" as const,
-    }, ...prev].slice(0, 8));
-    setCommand("");
-  }, [command, language]);
+      status: result.action === "UNKNOWN" ? "warn" : "ok",
+    };
+
+    setHistory(prev => [userMsg, ...prev].slice(0, 10));
+    setIsProcessing(true);
+
+    try {
+      const isDriveAction = ["FORWARD", "BACKWARD", "LEFT", "RIGHT", "STOP"].includes(result.action);
+      if (isDriveAction) {
+        await setDriveDirection(result.action as DriveDirection);
+      } else {
+        await sendAutonomousCommand({
+          command: result.action,
+          raw: cmdText,
+          language: detectedLang,
+          timestamp: Date.now(),
+        });
+      }
+
+      // Simulate system response after 800ms
+      setTimeout(() => {
+        const sysMsg: LogMessage = {
+          id: Date.now() + 1,
+          sender: "system",
+          text: getSystemResponse(result.action, cmdText),
+          time: new Date().toLocaleTimeString(),
+          status: "ok",
+        };
+        setHistory(prev => [sysMsg, ...prev].slice(0, 10));
+        setIsProcessing(false);
+      }, 800);
+
+    } catch (err) {
+      console.warn("[ARES-01] Error sending command:", err);
+      setIsProcessing(false);
+    }
+  }, [command]);
 
   // ── Voice
   const [isListening, setIsListening] = useState(false);
+  const [voiceLanguage, setVoiceLanguage] = useState("bn-BD");
   const recognitionRef = useRef<any | null>(null);
+  const isVoiceProcessingRef = useRef(false);
 
-  const handleVoiceToggle = useCallback(async () => {
+  const parseAndRouteVoiceCommand = useCallback(async (command: string) => {
+    console.log("ARES-01 NLP Parsing Command: ", command);
+    const lower = command.toLowerCase();
+
+    // Auto detect language: Bengali characters reside in range \u0980 to \u09FF
+    const isBengali = /[\u0980-\u09FF]/.test(command);
+    const detectedLang = isBengali ? "bn" : "en";
+
+    // Map command result to history log
+    let mappedAction: ParsedCommand = "UNKNOWN";
+    let statusOk = false;
+
+    // Case 1: FORWARD COMMAND
+    if (lower.includes("সামনে যাও") || lower.includes("go forward") || lower.includes("সামনে")) {
+      await setDriveDirection("FORWARD");
+      mappedAction = "FORWARD";
+      statusOk = true;
+    }
+    // Case 2: BACKWARD COMMAND
+    else if (lower.includes("পেছনে যাও") || lower.includes("go backward") || lower.includes("পিছনে যাও")) {
+      await setDriveDirection("BACKWARD");
+      mappedAction = "BACKWARD";
+      statusOk = true;
+    }
+    // Case 3: AUTONOMOUS MACRO (PICK BALL)
+    else if (lower.includes("হাত তোলো") || lower.includes("pick ball") || lower.includes("বল তোলো")) {
+      await sendAutonomousCommand({
+        command: "PICK_BALL",
+        action: "PICK_BALL",
+        raw: command,
+        language: detectedLang,
+        timestamp: Date.now()
+      });
+      mappedAction = "PICK_BALL";
+      statusOk = true;
+    }
+    // Case 4: EMERGENCY STOP MAPPING
+    else if (lower.includes("থামো") || lower.includes("stop") || lower.includes("ব্রেক")) {
+      await setDriveDirection("STOP");
+      mappedAction = "STOP";
+      statusOk = true;
+    }
+    // Fallback case: General NLP ingestion for unstructured entries
+    else {
+      await sendAutonomousCommand({
+        command: "UNSTRUCTURED_DIRECTIVE",
+        action: "UNSTRUCTURED_DIRECTIVE",
+        raw: command,
+        language: detectedLang,
+        timestamp: Date.now()
+      });
+      mappedAction = "UNKNOWN";
+      statusOk = false;
+    }
+
+    const label = ACTION_LABELS[mappedAction] || "Direct Command";
+
+    // Add to history log for visual dialogue bubbles
+    const userMsg: LogMessage = {
+      id: Date.now(),
+      sender: "user",
+      text: command,
+      action: `${mappedAction} — ${label}`,
+      time: new Date().toLocaleTimeString(),
+      status: statusOk ? "ok" : "warn",
+    };
+    setHistory(prev => [userMsg, ...prev].slice(0, 10));
+    setIsProcessing(true);
+
+    // Simulate system response after 800ms
+    setTimeout(() => {
+      const sysMsg: LogMessage = {
+        id: Date.now() + 1,
+        sender: "system",
+        text: getSystemResponse(mappedAction, command),
+        time: new Date().toLocaleTimeString(),
+        status: "ok",
+      };
+      setHistory(prev => [sysMsg, ...prev].slice(0, 10));
+      setIsProcessing(false);
+    }, 800);
+
+  }, []);
+
+  useEffect(() => {
     const SpeechRecognitionAPI =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    if (!isListening && SpeechRecognitionAPI) {
-      const recognition = new SpeechRecognitionAPI();
-      recognition.lang = language === "bn" ? "bn-BD" : "en-US";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-      recognitionRef.current = recognition;
+    if (!SpeechRecognitionAPI) {
+      console.warn("Speech recognition not supported in this browser.");
+      return;
+    }
 
-      recognition.onresult = async (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        console.log(`${LOG} Voice transcript: "${transcript}"`);
-        const result = parseCommand(transcript);
-        console.log(`${LOG} Voice → ${result.action}`);
-        await sendAutonomousCommand({ command: result.action, raw: transcript, language, timestamp: Date.now() });
-        setHistory(prev => [{
-          id: Date.now(), text: transcript,
-          action: `${result.action} — ${ACTION_LABELS[result.action]}`,
-          time: new Date().toLocaleTimeString(),
-          status: result.action === "UNKNOWN" ? "warn" as const : "ok" as const,
-        }, ...prev].slice(0, 8));
+    try {
+      const recognition = new SpeechRecognitionAPI();
+      recognition.continuous = false; // Disable infinite background loops
+      recognition.interimResults = false; // Set to false to prevent half-sentence processing
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event: any) => {
+        if (isVoiceProcessingRef.current) return; // Guard clause against double processing
+        
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
+        }
+        
+        // Sanitize input data
+        const commandText = finalTranscript.trim().toLowerCase();
+        if (!commandText) return;
+
+        // Render processed transcript preview in UI
+        const previewBox = document.getElementById('voice-transcript-preview');
+        if (previewBox) {
+          previewBox.innerText = `Executing: "${finalTranscript}"`;
+        }
+
+        // Activate 2-Second Cooldown Anti-Duplicate Lock
+        isVoiceProcessingRef.current = true;
+
+        // Execute NLP Mapping and Firebase Node Synchronization
+        parseAndRouteVoiceCommand(commandText);
+
+        // Release lock safely after cooldown expiration
+        setTimeout(() => {
+          isVoiceProcessingRef.current = false;
+          if (previewBox) {
+            previewBox.innerText = "Click button to speak";
+          }
+        }, COOLDOWN_TIME);
+      };
+
+      recognition.onerror = (err: any) => {
+        console.warn(`${LOG} Speech recognition error:`, err);
+        setIsListening(false);
+        isVoiceProcessingRef.current = false;
+      };
+
+      recognition.onend = () => {
         setIsListening(false);
       };
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend   = () => setIsListening(false);
-      recognition.start();
-      setIsListening(true);
-      console.log(`${LOG} Voice recognition started (${language})`);
-    } else {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      console.log(`${LOG} Voice recognition stopped`);
+
+      recognitionRef.current = recognition;
+    } catch (e) {
+      console.error("Failed to initialize speech recognition:", e);
     }
-  }, [isListening, language]);
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+      }
+    };
+  }, [parseAndRouteVoiceCommand]);
+
+  const handleVoiceToggle = useCallback(async () => {
+    if (!recognitionRef.current) {
+      console.warn("Speech recognition not supported or not initialized.");
+      return;
+    }
+
+    if (isVoiceProcessingRef.current) {
+      console.log("Speech recognition is in 2s cooldown period.");
+      return;
+    }
+
+    if (!isListening) {
+      recognitionRef.current.lang = voiceLanguage;
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+        console.log(`${LOG} Voice recognition started (language: ${voiceLanguage})`);
+      } catch (e) {
+        console.error("Speech recognition start failed:", e);
+      }
+    } else {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      setIsListening(false);
+      console.log(`${LOG} Voice recognition stopped.`);
+    }
+  }, [isListening, voiceLanguage]);
 
   // ── Camera Stream
   const [roverIp, setRoverIp] = useState("");
@@ -1044,6 +1410,23 @@ export default function Dashboard() {
           .float-blob-2 {
             animation: float2 22s ease-in-out infinite;
           }
+          @keyframes voiceWave {
+            0%, 100% { transform: scaleY(0.25); }
+            50% { transform: scaleY(1.2); }
+          }
+          .animate-voice-wave {
+            animation-name: voiceWave;
+            transform-origin: center;
+          }
+          @keyframes progressGlow {
+            0% { left: -50%; }
+            100% { left: 100%; }
+          }
+          .animate-progress-glow {
+            position: absolute;
+            height: 100%;
+            animation: progressGlow 1.2s linear infinite;
+          }
         `}</style>
 
         {/* Ambient Auroras */}
@@ -1134,68 +1517,100 @@ export default function Dashboard() {
               <motion.div key="ai"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="p-3 overflow-hidden h-full flex flex-col justify-center">
-                <div className="max-w-2xl w-full mx-auto flex flex-col gap-2">
+                className="p-3 overflow-hidden h-full flex flex-col justify-center animate-none">
+                <div className="max-w-2xl w-full mx-auto flex flex-col gap-1.5">
                   <div className="text-center">
-                    <div className="text-sm font-semibold">Autonomous Directive</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      Natural language commands in English or Bengali → Firebase <code className="font-mono text-[10px] bg-muted px-1 rounded">ares01/autonomous/action</code>
+                    <div className="text-xs sm:text-sm font-semibold">Autonomous Directive</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                      Auto-detect language (English/Bengali) → Firebase <code className="font-mono text-[10px] bg-muted px-1 rounded">ares01/autonomous/action</code>
                     </div>
                   </div>
 
                   <div className="flex gap-2">
-                    <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger className="w-[110px] shrink-0" data-testid="select-lang">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="bn">Bengali</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <input ref={commandInputRef} type="text" inputMode="text" autoComplete="off"
-                      placeholder={language === "bn" ? "নির্দেশ দিন… যেমন: সামনে যাও, বল তোলো" : "Give command… e.g., go forward, pick ball, scan area"}
+                      placeholder="Type command for ARES-01 (e.g., 'Take a 360-degree scan' or 'সামনের দিকে ৫ মিটার যাও')..."
                       value={command}
                       onChange={e => setCommand(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && handleSendCommand()}
+                      onKeyDown={e => e.key === "Enter" && !isProcessing && handleSendCommand()}
                       onClick={() => commandInputRef.current?.focus()}
-                      className="cmd-input flex-1 h-9 rounded-lg border border-input bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                      disabled={isProcessing}
+                      className="cmd-input flex-1 h-9 rounded-lg border border-input bg-background px-4 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       data-testid="input-ai-cmd" />
-                    <Button onClick={handleSendCommand} data-testid="btn-ai-send"
+                    <Button onClick={handleSendCommand} data-testid="btn-ai-send" disabled={isProcessing || !command.trim()}
                       className="h-9 px-4 active:scale-95 transition-transform shrink-0">
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
 
-                  <div className="flex flex-wrap gap-1 justify-center">
+                  <div className="flex flex-wrap gap-1 justify-center max-h-[48px] overflow-y-auto">
                     {["go forward", "turn left", "pick ball", "scan area", "stop", "arm home",
                       "সামনে যাও", "বামে যাও", "বল তোলো", "থামো"].map(chip => (
                       <button key={chip} onClick={() => setCommand(chip)}
-                        className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-muted/50 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all font-medium">
+                        className="text-[9px] px-2 py-0.5 rounded-full border border-border bg-muted/50 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all font-medium">
                         {chip}
                       </button>
                     ))}
                   </div>
 
                   <div className="flex flex-col min-h-0">
-                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Command Log</div>
-                    <div className="space-y-1.5 max-h-[85px] overflow-y-auto pr-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Command Log</div>
+                      <div className="flex items-center justify-between h-4">
+                        {isProcessing ? (
+                          <div className="flex items-center gap-1 text-[9px] font-mono text-primary font-semibold tracking-wider animate-pulse">
+                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                            <span>AI PROCESSING...</span>
+                          </div>
+                        ) : (
+                          <div className="text-[8.5px] font-mono text-muted-foreground">
+                            SYSTEM READY
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="relative w-full h-0.5 bg-muted rounded-full overflow-hidden mb-1.5 shrink-0">
+                      {isProcessing && (
+                        <div className="absolute inset-y-0 bg-gradient-to-r from-primary/40 via-primary to-indigo-500/40 w-1/2 rounded-full animate-progress-glow" />
+                      )}
+                    </div>
+                    <div className="space-y-1.5 max-h-[80px] overflow-y-auto pr-1">
                       <AnimatePresence initial={false}>
-                        {history.map(cmd => (
-                          <motion.div key={cmd.id} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                            className="flex gap-2 items-start p-1.5 rounded-lg bg-muted/40 border border-border/50">
-                            {cmd.status === "ok"
-                              ? <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-                              : <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />}
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-[11px] leading-snug">{cmd.text}</span>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[9px] font-mono font-semibold text-primary">{cmd.action}</span>
-                                <span className="text-[9px] text-muted-foreground">{cmd.time}</span>
+                        {history.map(cmd => {
+                          const isUser = cmd.sender === "user";
+                          return (
+                            <motion.div
+                              key={cmd.id}
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0 }}
+                              className={`flex flex-col ${isUser ? "items-end" : "items-start"} w-full`}
+                            >
+                              <div
+                                className={`max-w-[90%] rounded-xl px-2.5 py-1.5 text-[10px] sm:text-[11px] leading-normal shadow-sm border ${
+                                  isUser
+                                    ? "bg-primary/10 border-primary/20 rounded-tr-none text-right"
+                                    : "bg-muted/80 border-border rounded-tl-none text-left"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 mb-0.5 justify-between">
+                                  <span className={`text-[8px] font-bold tracking-wider uppercase ${isUser ? "text-primary" : "text-indigo-400 flex items-center gap-0.5"}`}>
+                                    {!isUser && <Bot className="w-2 h-2" />}
+                                    {isUser ? "Operator" : "ARES-01"}
+                                  </span>
+                                  <span className="text-[7.5px] text-muted-foreground font-mono">{cmd.time}</span>
+                                </div>
+                                <div className={`break-words ${isUser ? "text-right" : "text-left"}`}>{cmd.text}</div>
+                                {isUser && cmd.action && (
+                                  <div className="mt-1 flex justify-end">
+                                    <span className="text-[7.5px] font-mono bg-primary/25 text-primary px-1 py-0.5 rounded leading-none">
+                                      {cmd.action}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          </motion.div>
-                        ))}
+                            </motion.div>
+                          );
+                        })}
                       </AnimatePresence>
                     </div>
                   </div>
@@ -1208,61 +1623,58 @@ export default function Dashboard() {
               <motion.div key="voice"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="h-full flex flex-col items-center justify-center gap-2 p-3 min-h-[145px] overflow-hidden">
+                className="h-full flex items-center justify-center p-3 overflow-hidden">
 
-                <div className="flex items-end justify-center gap-1 h-7">
-                  <AnimatePresence>
-                    {isListening && [0.6, 1, 0.7, 1, 0.5, 0.9, 0.6, 1, 0.7].map((base, i) => (
-                      <motion.span key={i} className="w-1 rounded-full bg-primary"
-                        animate={{ scaleY: [base * 0.4, base, base * 0.5, base * 0.9, base * 0.3] }}
-                        transition={{ repeat: Infinity, duration: 0.8 + i * 0.07, ease: "easeInOut" }}
-                        style={{ height: 24, originY: 1, display: "inline-block" }} />
-                    ))}
-                  </AnimatePresence>
-                </div>
+                <div className="flex flex-col items-center justify-center p-4 space-y-4 bg-card/40 rounded-xl border border-border/50 w-full max-w-md max-h-[42dvh] overflow-hidden">
+                  <div className="flex items-center gap-3 w-full max-w-xs">
+                    <label htmlFor="voice-lang" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                      Select Language:
+                    </label>
+                    <select
+                      id="voice-lang"
+                      value={voiceLanguage}
+                      onChange={e => setVoiceLanguage(e.target.value)}
+                      className="w-full px-3 py-1.5 text-sm bg-background border border-border/80 rounded-md focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer text-foreground"
+                    >
+                      <option value="bn-BD">বাংলা (Bangla)</option>
+                      <option value="en-US">English</option>
+                    </select>
+                  </div>
 
-                <div className="relative flex items-center justify-center">
-                  <AnimatePresence>
-                    {isListening && [1.3, 1.6, 2.0].map((scale, i) => (
-                      <motion.div key={i} className="absolute rounded-full bg-primary/15" style={{ width: 70, height: 70 }}
-                        animate={{ scale: [1, scale], opacity: [0.5, 0] }}
-                        transition={{ repeat: Infinity, duration: 2, delay: i * 0.55, ease: "easeOut" }} />
-                    ))}
-                  </AnimatePresence>
-                  <Button size="lg" variant={isListening ? "default" : "outline"}
-                    className={`w-18 h-18 rounded-full relative z-10 transition-all duration-200 active:scale-95 shadow-md ${isListening ? "bg-primary text-primary-foreground shadow-primary/25" : ""}`}
-                    onClick={handleVoiceToggle} data-testid="btn-voice-toggle">
-                    <Mic className={`w-6 h-6 ${isListening ? "animate-pulse" : ""}`} />
-                  </Button>
-                </div>
+                  {/* Active High-Fidelity Audio Waveform Effect */}
+                  <div className={`flex items-center justify-center gap-1.5 h-12 transition-opacity duration-300 ${isListening ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}>
+                    <div className="w-1.5 h-6 bg-red-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-1.5 h-10 bg-red-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-1.5 h-12 bg-red-500 rounded-full animate-bounce"></div>
+                    <div className="w-1.5 h-8 bg-red-500 rounded-full animate-bounce [animation-delay:-0.4s]"></div>
+                    <div className="w-1.5 h-5 bg-red-500 rounded-full animate-bounce [animation-delay:-0.2s]"></div>
+                  </div>
 
-                <div className="text-center space-y-0.5">
-                  {isListening ? (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                      className="text-xs font-semibold text-primary flex items-center justify-center gap-1">
-                      Listening
-                      <span className="flex gap-0.5">
-                        {[0, 0.2, 0.4].map((delay, i) => (
-                          <motion.span key={i} animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1.5, delay }}>.</motion.span>
-                        ))}
-                      </span>
-                    </motion.div>
-                  ) : (
-                    <p className="text-xs font-medium text-muted-foreground">Tap to start voice command</p>
-                  )}
-                  <p className="text-[10px] text-muted-foreground/60">
-                    {language === "bn" ? "বাংলা বা ইংরেজিতে বলুন" : "Speak in English or Bengali"} — fires <code className="font-mono text-[9px] bg-muted px-1 rounded">ares01/autonomous/action</code>
-                  </p>
-                  <div className="flex items-center justify-center gap-2 pt-0.5">
-                    <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger className="w-[110px] h-6 text-[10px]" data-testid="select-voice-lang">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English (en-US)</SelectItem>
-                        <SelectItem value="bn">Bengali (bn-BD)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <button
+                    id="voice-toggle-btn"
+                    onClick={handleVoiceToggle}
+                    className={`w-full max-w-xs py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                      isListening 
+                        ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse' 
+                        : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                    }`}
+                  >
+                    {isListening ? (
+                      <>
+                        <span>🔴</span> Stop & Run Command
+                      </>
+                    ) : (
+                      <>
+                        <span>🎙️</span> Start Voice Command
+                      </>
+                    )}
+                  </button>
+                  
+                  {/* Live Transcript Display Box */}
+                  <div className="w-full text-center min-h-[1.5rem]">
+                    <p className="text-xs text-muted-foreground italic" id="voice-transcript-preview">
+                      {isListening ? "Listening..." : "Click button to speak"}
+                    </p>
                   </div>
                 </div>
 
