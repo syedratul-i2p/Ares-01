@@ -352,43 +352,43 @@ const DPad = React.memo(function DPad({
     activeDirection === dir ? "scale-90 opacity-60 ring-2 ring-primary/40" : "";
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-2">
+    <div className="flex flex-col items-center justify-center gap-1.5 py-1">
       <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Drive Controls</div>
       <div className="flex flex-col items-center gap-1.5 select-none">
         <Button variant="secondary" size="lg"
-          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("forward")}`}
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("forward")}`}
           onMouseDown={() => onPress("forward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("forward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-fwd">
-          <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6" />
+          <ArrowUp className="w-5 h-5 sm:w-5 sm:h-5" />
         </Button>
         <div className="flex gap-1.5">
           <Button variant="secondary" size="lg"
-            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("left")}`}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("left")}`}
             onMouseDown={() => onPress("left")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("left"); }} onTouchEnd={onRelease}
             data-testid="btn-move-left">
-            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ArrowLeft className="w-5 h-5 sm:w-5 sm:h-5" />
           </Button>
           <Button variant="destructive" size="lg"
-            className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all active:scale-95"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all active:scale-95"
             onClick={onStop} data-testid="btn-move-stop">
-            <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+            <Square className="w-4 h-4 sm:w-4 sm:h-4 fill-current" />
           </Button>
           <Button variant="secondary" size="lg"
-            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("right")}`}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("right")}`}
             onMouseDown={() => onPress("right")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("right"); }} onTouchEnd={onRelease}
             data-testid="btn-move-right">
-            <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ArrowRight className="w-5 h-5 sm:w-5 sm:h-5" />
           </Button>
         </div>
         <Button variant="secondary" size="lg"
-          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("backward")}`}
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("backward")}`}
           onMouseDown={() => onPress("backward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("backward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-back">
-          <ArrowDown className="w-5 h-5 sm:w-6 sm:h-6" />
+          <ArrowDown className="w-5 h-5 sm:w-5 sm:h-5" />
         </Button>
         <div className="h-5 mt-1">
           <AnimatePresence>
@@ -607,12 +607,12 @@ const ArmControls = React.memo(function ArmControls({
         ))}
       </div>
 
-      <div className="flex flex-row gap-4 items-center bg-muted/20 border border-border/30 rounded-xl p-3.5 w-full">
+      <div className="flex flex-row gap-3 items-center bg-muted/20 border border-border/30 rounded-xl p-2.5 w-full">
         <div className="relative w-[150px] h-[110px] rounded-lg border border-border/40 bg-card overflow-hidden shrink-0 flex items-center justify-center">
           <canvas ref={canvasRef} width={150} height={110} className="w-full h-full block" />
         </div>
 
-        <div className="flex-1 w-full space-y-3">
+        <div className="flex-1 w-full space-y-2">
           {JOINT_ORDER.map(key => {
             const cfg = JOINT_CONFIG[key];
             const value = joints[key];
@@ -650,6 +650,16 @@ const ArmControls = React.memo(function ArmControls({
           })}
         </div>
       </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full mt-2 text-xs gap-1.5 h-7 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        onClick={handleResetArm}
+        data-testid="btn-arm-reset-bottom"
+      >
+        <RotateCcw className="w-3 h-3" />
+        Reset Arm to Home
+      </Button>
     </div>
   );
 });
@@ -1038,9 +1048,9 @@ export default function Dashboard() {
         ping={ping}
       />
 
-      {/* Camera View Section (Top - Max 62% Viewport Height Budget) */}
+      {/* Camera View Section (Top - Max 46dvh Viewport Height Budget) */}
       <div className="w-full bg-black/20 flex justify-center items-center shrink-0 border-b border-border/40">
-        <div className="w-full max-w-none md:max-w-[calc(58dvh*16/9)] aspect-video max-h-[62vh] md:max-h-[58dvh] relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
+        <div className="w-full max-w-none md:max-w-[min(100%,calc(46dvh*16/9))] aspect-video max-h-[50vh] md:max-h-[46dvh] relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
           <CameraView
             streamSrc={streamSrc}
             streamError={streamError}
@@ -1051,8 +1061,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Interactive Control Section (Middle - Max 30% Viewport Height Budget) */}
-      <div className="flex-1 flex flex-col min-h-0 max-h-[30vh] md:max-h-[29dvh] overflow-hidden bg-background">
+      {/* Interactive Control Section (Middle - Max 41dvh Viewport Height Budget) */}
+      <div className="flex-1 flex flex-col min-h-0 max-h-[42vh] md:max-h-[41dvh] overflow-hidden bg-background">
         
         {/* 2. MODE SELECTOR TABS */}
         <div className="shrink-0 px-4 pt-2.5 pb-1.5 bg-background z-10">
@@ -1262,7 +1272,7 @@ export default function Dashboard() {
       </div>
 
       {/* Telemetry Bar (Single Instance - Pinned Flat at Bottom) */}
-      <div className="w-full shrink-0 mt-auto bg-card/80 border-t z-10 max-h-[8vh] md:max-h-[10vh]">
+      <div className="w-full shrink-0 mt-auto bg-card/80 border-t z-10 h-[8dvh] max-h-[8dvh]">
         <TelemetryBar
           distance={distance}
           solar={solar}
