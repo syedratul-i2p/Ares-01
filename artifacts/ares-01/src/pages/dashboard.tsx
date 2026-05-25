@@ -134,6 +134,14 @@ interface SettingsPanelProps {
   handleConnectWs: () => void;
   handleDisconnectWs: () => void;
   ping: number | null;
+  distance: number;
+  solar: number;
+  motorTemp: number;
+  rssi: number;
+  fps: number;
+  pitch: number;
+  roll: number;
+  yaw: number;
 }
 
 const SettingsPanel = React.memo(function SettingsPanel({
@@ -150,7 +158,15 @@ const SettingsPanel = React.memo(function SettingsPanel({
   roverConnectionStatus,
   handleConnectWs,
   handleDisconnectWs,
-  ping
+  ping,
+  distance,
+  solar,
+  motorTemp,
+  rssi,
+  fps,
+  pitch,
+  roll,
+  yaw
 }: SettingsPanelProps) {
   return (
     <AnimatePresence>
@@ -175,7 +191,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                 </div>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                   <Camera className="w-3 h-3" /> ESP32-CAM Stream
@@ -247,6 +263,41 @@ const SettingsPanel = React.memo(function SettingsPanel({
                   <div><span className="text-foreground/60">cmd:</span> ares01/autonomous/action</div>
                   <div><span className="text-foreground/60">telemetry:</span> ares01/telemetry/*</div>
                   <div><span className="text-foreground/60">heartbeat:</span> ares01/telemetry/heartbeat</div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Activity className="w-3 h-3 text-primary animate-pulse" /> Live Diagnostic/Status
+                </label>
+                <div className="text-[10px] font-mono text-muted-foreground space-y-1 bg-muted/40 rounded-md p-2 border border-border/50">
+                  <div className="flex justify-between items-center">
+                    <span>Range/Dist:</span>
+                    <span className="font-semibold text-foreground">{distance} cm</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Solar Array:</span>
+                    <span className="font-semibold text-yellow-500">{solar.toFixed(1)}V</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>AI Vision:</span>
+                    <span className="text-primary font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> YOLOv8
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Motor Temp:</span>
+                    <span className={`font-semibold ${motorTemp > 60 ? "text-red-500 font-bold" : motorTemp > 45 ? "text-orange-500" : "text-foreground"}`}>
+                      {motorTemp.toFixed(1)}°C
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>IMU (P/R/Y):</span>
+                    <span className="font-semibold text-foreground">{pitch}°/{roll}°/{yaw}°</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Signal/FPS:</span>
+                    <span className="font-semibold text-foreground">{rssi} dBm / {fps} FPS</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -352,43 +403,43 @@ const DPad = React.memo(function DPad({
     activeDirection === dir ? "scale-90 opacity-60 ring-2 ring-primary/40" : "";
 
   return (
-    <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+    <div className="flex flex-col items-center justify-center gap-2 py-2">
       <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Drive Controls</div>
-      <div className="flex flex-col items-center gap-1.5 select-none">
+      <div className="flex flex-col items-center gap-2 sm:gap-3 select-none">
         <Button variant="secondary" size="lg"
-          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("forward")}`}
+          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("forward")}`}
           onMouseDown={() => onPress("forward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("forward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-fwd">
-          <ArrowUp className="w-5 h-5 sm:w-5 sm:h-5" />
+          <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6" />
         </Button>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2 sm:gap-3">
           <Button variant="secondary" size="lg"
-            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("left")}`}
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("left")}`}
             onMouseDown={() => onPress("left")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("left"); }} onTouchEnd={onRelease}
             data-testid="btn-move-left">
-            <ArrowLeft className="w-5 h-5 sm:w-5 sm:h-5" />
+            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </Button>
           <Button variant="destructive" size="lg"
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all active:scale-95"
+            className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all active:scale-95"
             onClick={onStop} data-testid="btn-move-stop">
-            <Square className="w-4 h-4 sm:w-4 sm:h-4 fill-current" />
+            <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
           </Button>
           <Button variant="secondary" size="lg"
-            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("right")}`}
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("right")}`}
             onMouseDown={() => onPress("right")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("right"); }} onTouchEnd={onRelease}
             data-testid="btn-move-right">
-            <ArrowRight className="w-5 h-5 sm:w-5 sm:h-5" />
+            <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
           </Button>
         </div>
         <Button variant="secondary" size="lg"
-          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("backward")}`}
+          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("backward")}`}
           onMouseDown={() => onPress("backward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("backward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-back">
-          <ArrowDown className="w-5 h-5 sm:w-5 sm:h-5" />
+          <ArrowDown className="w-5 h-5 sm:w-6 sm:h-6" />
         </Button>
         <div className="h-5 mt-1">
           <AnimatePresence>
@@ -581,7 +632,7 @@ const ArmControls = React.memo(function ArmControls({
   }, [joints]);
 
   return (
-    <div className="flex flex-col gap-2.5 py-2">
+    <div className="flex flex-col gap-1.5 py-0.5">
       <div className="flex items-center justify-between">
         <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">5DOF Arm Control</div>
         <div className="flex items-center gap-2">
@@ -607,42 +658,42 @@ const ArmControls = React.memo(function ArmControls({
         ))}
       </div>
 
-      <div className="flex flex-row gap-3 items-center bg-muted/20 border border-border/30 rounded-xl p-2.5 w-full">
-        <div className="relative w-[150px] h-[110px] rounded-lg border border-border/40 bg-card overflow-hidden shrink-0 flex items-center justify-center">
-          <canvas ref={canvasRef} width={150} height={110} className="w-full h-full block" />
+      <div className="flex flex-row gap-2 items-center bg-muted/20 border border-border/30 rounded-xl p-1.5 py-2 w-full font-sans">
+        <div className="relative w-[130px] h-[80px] rounded-lg border border-border/40 bg-card overflow-hidden shrink-0 flex items-center justify-center">
+          <canvas ref={canvasRef} width={130} height={80} className="w-full h-full block" />
         </div>
 
-        <div className="flex-1 w-full space-y-2">
+        <div className="flex-1 w-full space-y-0.5">
           {JOINT_ORDER.map(key => {
             const cfg = JOINT_CONFIG[key];
             const value = joints[key];
             return (
-              <div key={key} className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 w-20 shrink-0">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dotClass}`} />
-                  <span className="text-xs md:text-sm font-semibold text-muted-foreground truncate">{cfg.label}</span>
+              <div key={key} className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 w-[70px] shrink-0">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
+                  <span className="text-xs font-semibold text-muted-foreground truncate">{cfg.label}</span>
                 </div>
                 <button onClick={() => updateJoint(key, -stepSize)}
-                  className="h-6 w-6 shrink-0 rounded border border-border flex items-center justify-center text-xs bg-background hover:bg-muted active:scale-90 transition-all font-semibold"
+                  className="h-5 w-5 shrink-0 rounded border border-border flex items-center justify-center text-[10px] bg-background hover:bg-muted active:scale-90 transition-all font-semibold"
                   data-testid={`btn-arm-${key}-dec`}>−</button>
                 <input type="range" min={0} max={180} value={value}
                   onChange={e => setJointAngle(key, Number(e.target.value))}
-                  className="joint-slider flex-1 h-2 cursor-pointer"
+                  className="joint-slider flex-1 h-1.5 cursor-pointer"
                   style={{ accentColor: cfg.color }}
                   data-testid={`slider-arm-${key}`} />
                 <button onClick={() => updateJoint(key, stepSize)}
-                  className="h-6 w-6 shrink-0 rounded border border-border flex items-center justify-center text-xs bg-background hover:bg-muted active:scale-90 transition-all font-semibold"
+                  className="h-5 w-5 shrink-0 rounded border border-border flex items-center justify-center text-[10px] bg-background hover:bg-muted active:scale-90 transition-all font-semibold"
                   data-testid={`btn-arm-${key}-inc`}>+</button>
                 {editingJoint === key ? (
                   <input type="number" min={0} max={180} value={editValue}
                     onChange={e => setEditValue(e.target.value)}
                     onBlur={() => commitEdit(key)}
                     onKeyDown={e => { if (e.key === "Enter") commitEdit(key); if (e.key === "Escape") setEditingJoint(null); }}
-                    className="w-12 text-right font-mono text-xs border border-primary rounded px-1 py-0.5 bg-background focus:outline-none"
+                    className="w-10 text-right font-mono text-[10px] border border-primary rounded px-0.5 py-0.5 bg-background focus:outline-none"
                     autoFocus data-testid={`input-arm-${key}-direct`} />
                 ) : (
                   <button onClick={() => startEdit(key, value)}
-                    className={`w-12 text-right text-xs md:text-sm font-mono font-bold tabular-nums hover:underline cursor-text shrink-0 ${cfg.accentClass}`}
+                    className={`w-10 text-right text-xs font-mono font-bold tabular-nums hover:underline cursor-text shrink-0 ${cfg.accentClass}`}
                     data-testid={`btn-arm-${key}-value`}>{value}°</button>
                 )}
               </div>
@@ -653,7 +704,7 @@ const ArmControls = React.memo(function ArmControls({
       <Button
         variant="outline"
         size="sm"
-        className="w-full mt-2 text-xs gap-1.5 h-7 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        className="w-full mt-1 text-xs gap-1.5 h-7 text-muted-foreground hover:text-foreground transition-colors shrink-0"
         onClick={handleResetArm}
         data-testid="btn-arm-reset-bottom"
       >
@@ -664,99 +715,6 @@ const ArmControls = React.memo(function ArmControls({
   );
 });
 
-interface TelemetryBarProps {
-  distance: number;
-  solar: number;
-  motorTemp: number;
-  rssi: number;
-  fps: number;
-  pitch: number;
-  roll: number;
-  yaw: number;
-  fbStatus: "ready" | "not-configured";
-}
-
-const TelemetryBar = React.memo(function TelemetryBar({
-  distance,
-  solar,
-  motorTemp,
-  rssi,
-  fps,
-  pitch,
-  roll,
-  yaw,
-  fbStatus
-}: TelemetryBarProps) {
-  return (
-    <div className="shrink-0 border-t bg-card/80 backdrop-blur-sm">
-      <div className="flex items-center gap-0 divide-x divide-border overflow-x-auto">
-        <div className="flex items-center gap-1.5 px-4 py-2.5 shrink-0">
-          <Ruler className="w-3 h-3 text-muted-foreground shrink-0" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Dist</span>
-          <span className="text-xs font-mono font-semibold">{distance}</span>
-          <span className="text-[10px] text-muted-foreground">cm</span>
-          <div className="w-10 ml-1">
-            <Progress value={(distance / 250) * 100} className="h-1"
-              indicatorColor={distance < 30 ? "bg-red-500" : distance < 80 ? "bg-yellow-500" : "bg-green-500"} />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-4 py-2.5 shrink-0">
-          <Zap className="w-3 h-3 text-muted-foreground shrink-0" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Solar</span>
-          <span className="text-xs font-mono font-semibold">{solar.toFixed(1)}V</span>
-          <div className="w-10 ml-1">
-            <Progress value={Math.min(100, (solar / 5) * 100)} className="h-1" indicatorColor="bg-yellow-400" />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-4 py-2.5 shrink-0">
-          <Cpu className="w-3 h-3 text-primary shrink-0" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">AI Vision</span>
-          <span className="flex items-center gap-1 text-xs font-semibold text-primary">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
-            YOLOv8
-          </span>
-          <span className="text-[10px] text-muted-foreground font-mono">1.4M fr</span>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-4 py-2.5 shrink-0">
-          <Thermometer className="w-3 h-3 text-orange-500 shrink-0" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Motors</span>
-          <span className={`text-xs font-mono font-semibold ${motorTemp > 60 ? "text-red-500" : motorTemp > 45 ? "text-orange-500" : "text-foreground"}`}>
-            {motorTemp.toFixed(1)}°C
-          </span>
-          <div className="w-10 ml-1">
-            <Progress value={(motorTemp / 80) * 100} className="h-1"
-              indicatorColor={motorTemp > 60 ? "bg-red-500" : motorTemp > 45 ? "bg-orange-500" : "bg-green-500"} />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-4 py-2.5 shrink-0">
-          <Radio className="w-3 h-3 text-muted-foreground shrink-0" />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">IMU</span>
-          <span className="text-xs font-mono">R<span className="text-muted-foreground">:</span>{roll}°</span>
-          <span className="text-xs font-mono">P<span className="text-muted-foreground">:</span>{pitch}°</span>
-          <span className="text-xs font-mono">Y<span className="text-muted-foreground">:</span>{yaw}°</span>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-4 py-2.5 shrink-0 ml-auto">
-          <Signal className="w-3 h-3 text-muted-foreground shrink-0" />
-          <span className="text-xs font-mono font-semibold">{rssi} dBm</span>
-          <span className="text-[10px] text-muted-foreground mx-0.5">·</span>
-          <span className="text-xs font-mono font-semibold">{fps} FPS</span>
-          {fbStatus === "ready" && (
-            <>
-              <span className="text-[10px] text-muted-foreground mx-0.5">·</span>
-              <Database className="w-2.5 h-2.5 text-indigo-500" />
-              <span className="text-[10px] text-indigo-500 font-medium">FB</span>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-});
 
 // ─── Main Dashboard ─────────────────────────────────────────────────────────────
 
@@ -1046,11 +1004,19 @@ export default function Dashboard() {
         handleConnectWs={handleConnectWs}
         handleDisconnectWs={handleDisconnectWs}
         ping={ping}
+        distance={distance}
+        solar={solar}
+        motorTemp={motorTemp}
+        rssi={rssi}
+        fps={fps}
+        pitch={pitch}
+        roll={roll}
+        yaw={yaw}
       />
 
-      {/* Camera View Section (Top - Max 46dvh Viewport Height Budget) */}
+      {/* Camera View Section (Top - Max 48dvh Viewport Height Budget) */}
       <div className="w-full bg-black/20 flex justify-center items-center shrink-0 border-b border-border/40">
-        <div className="w-full max-w-none md:max-w-[85vw] aspect-video md:aspect-auto max-h-[50vh] md:max-h-[46dvh] h-auto md:h-[46dvh] relative overflow-hidden">
+        <div className="w-full max-w-none md:max-w-[94vw] aspect-video md:aspect-auto max-h-[50vh] md:max-h-[48dvh] h-auto md:h-[48dvh] relative overflow-hidden">
           <CameraView
             streamSrc={streamSrc}
             streamError={streamError}
@@ -1061,8 +1027,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Interactive Control Section (Middle - Max 41dvh Viewport Height Budget) */}
-      <div className="flex-1 flex flex-col min-h-0 max-h-[42vh] md:max-h-[41dvh] overflow-hidden bg-background">
+      {/* Interactive Control Section (Middle - Max 42dvh Viewport Height Budget) */}
+      <div className="flex-1 flex flex-col min-h-0 max-h-[44vh] md:max-h-[42dvh] overflow-hidden bg-background">
         
         {/* 2. MODE SELECTOR TABS */}
         <div className="shrink-0 px-4 pt-2.5 pb-1.5 bg-background z-10">
@@ -1093,8 +1059,8 @@ export default function Dashboard() {
               <motion.div key="manual"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="px-4 py-1 h-full overflow-hidden flex items-center justify-center">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl w-full mx-auto items-center justify-items-center">
+                className="px-4 py-1.5 h-full overflow-hidden flex items-center justify-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-5xl w-full mx-auto items-center justify-items-center">
                   {/* LEFT: Drive D-Pad */}
                   <div className="flex items-center justify-center w-full">
                     <DPad
@@ -1132,8 +1098,8 @@ export default function Dashboard() {
               <motion.div key="ai"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="p-4 overflow-hidden h-full flex flex-col justify-center">
-                <div className="max-w-2xl w-full mx-auto flex flex-col gap-2.5">
+                className="p-3 overflow-hidden h-full flex flex-col justify-center">
+                <div className="max-w-2xl w-full mx-auto flex flex-col gap-2">
                   <div className="text-center">
                     <div className="text-sm font-semibold">Autonomous Directive</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
@@ -1177,7 +1143,7 @@ export default function Dashboard() {
 
                   <div className="flex flex-col min-h-0">
                     <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Command Log</div>
-                    <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
+                    <div className="space-y-1.5 max-h-[85px] overflow-y-auto pr-1">
                       <AnimatePresence initial={false}>
                         {history.map(cmd => (
                           <motion.div key={cmd.id} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -1206,7 +1172,7 @@ export default function Dashboard() {
               <motion.div key="voice"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="h-full flex flex-col items-center justify-center gap-3 p-4 min-h-[180px] overflow-hidden">
+                className="h-full flex flex-col items-center justify-center gap-2 p-3 min-h-[145px] overflow-hidden">
 
                 <div className="flex items-end justify-center gap-1 h-7">
                   <AnimatePresence>
@@ -1271,20 +1237,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Telemetry Bar (Single Instance - Pinned Flat at Bottom) */}
-      <div className="w-full shrink-0 mt-auto bg-card/80 border-t z-10 h-[8dvh] max-h-[8dvh]">
-        <TelemetryBar
-          distance={distance}
-          solar={solar}
-          motorTemp={motorTemp}
-          rssi={rssi}
-          fps={fps}
-          pitch={pitch}
-          roll={roll}
-          yaw={yaw}
-          fbStatus={fbStatus}
-        />
-      </div>
+
     </div>
   );
 }
