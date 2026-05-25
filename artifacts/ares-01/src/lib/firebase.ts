@@ -54,13 +54,21 @@ function dbRef(path: string): DatabaseReference | null {
 
 // ─── Drive Control ────────────────────────────────────────────────────────────
 
+let lastDriveDirection: DriveDirection | null = null;
 let driveDebounce: ReturnType<typeof setTimeout> | null = null;
 
 export type DriveDirection = "FORWARD" | "BACKWARD" | "LEFT" | "RIGHT" | "STOP";
 
 export async function setDriveDirection(direction: DriveDirection): Promise<void> {
+  // Filter out duplicate consecutive command updates
+  if (direction === lastDriveDirection) {
+    return;
+  }
+
   const r = dbRef("ares01/drive/direction");
   if (!r) return;
+
+  lastDriveDirection = direction;
 
   // Debounce rapid hold-to-move events to 50ms
   if (driveDebounce) clearTimeout(driveDebounce);
@@ -69,6 +77,8 @@ export async function setDriveDirection(direction: DriveDirection): Promise<void
       await set(r, direction);
     } catch (err) {
       console.warn("[ARES-01] Drive write failed:", err);
+      // Reset cache on error to allow retries
+      lastDriveDirection = null;
     }
   }, 50);
 }
@@ -83,20 +93,49 @@ export interface ArmAngles {
   gripper: number;
 }
 
-let armDebounce: ReturnType<typeof setTimeout> | null = null;
+let lastArmWriteTime = 0;
+let pendingArmAngles: ArmAngles | null = null;
+let armThrottleTimeout: ReturnType<typeof setTimeout> | null = null;
+const ARM_THROTTLE_LIMIT_MS = 80; // 12.5Hz max frequency for ESP32/PCA9685 loop
 
 export async function setArmAngles(angles: ArmAngles): Promise<void> {
   const r = dbRef("ares01/arm/angles");
   if (!r) return;
 
-  if (armDebounce) clearTimeout(armDebounce);
-  armDebounce = setTimeout(async () => {
+  const now = Date.now();
+  const timeSinceLastWrite = now - lastArmWriteTime;
+
+  const performWrite = async (anglesToWrite: ArmAngles) => {
+    lastArmWriteTime = Date.now();
     try {
-      await set(r, angles);
+      await set(r, anglesToWrite);
     } catch (err) {
       console.warn("[ARES-01] Arm write failed:", err);
     }
-  }, 80);
+  };
+
+  pendingArmAngles = angles;
+
+  // If there is no active timeout, we can write or schedule the next write
+  if (!armThrottleTimeout) {
+    if (timeSinceLastWrite >= ARM_THROTTLE_LIMIT_MS) {
+      // Write immediately if enough time has passed
+      const anglesToWrite = pendingArmAngles;
+      pendingArmAngles = null;
+      await performWrite(anglesToWrite);
+    } else {
+      // Schedule the write for the remaining time
+      const delay = ARM_THROTTLE_LIMIT_MS - timeSinceLastWrite;
+      armThrottleTimeout = setTimeout(async () => {
+        armThrottleTimeout = null;
+        if (pendingArmAngles) {
+          const anglesToWrite = pendingArmAngles;
+          pendingArmAngles = null;
+          await performWrite(anglesToWrite);
+        }
+      }, delay);
+    }
+  }
 }
 
 // ─── Autonomous Command ───────────────────────────────────────────────────────
@@ -153,7 +192,13 @@ export function subscribeTelemetry(
     activeListeners.push(r);
     onValue(r, snapshot => {
       const val = snapshot.val();
-      if (val !== null) onTelemetry({ [field]: Number(val) });
+      if (val !== null && val !== undefined) {
+        const num = Number(val);
+        // Ensure strictly validated, non-corrupted number inputs
+        if (!Number.isNaN(num)) {
+          onTelemetry({ [field]: num });
+        }
+      }
     });
   });
 
@@ -170,9 +215,13 @@ export function subscribeTelemetry(
 
   onValue(hbRef, snapshot => {
     const ts = snapshot.val();
-    if (ts !== null) {
-      onHeartbeat(true);
-      resetHeartbeatTimer();
+    if (ts !== null && ts !== undefined) {
+      const num = Number(ts);
+      // Strict verification of heartbeat timestamp input
+      if (!Number.isNaN(num) && num > 0) {
+        onHeartbeat(true);
+        resetHeartbeatTimer();
+      }
     }
   });
 

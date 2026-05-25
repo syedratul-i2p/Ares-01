@@ -101,7 +101,15 @@ export interface ParseResult {
   confidence: "high" | "low";
 }
 
-export function parseCommand(raw: string): ParseResult {
+export function parseCommand(raw: string | null | undefined): ParseResult {
+  if (raw === null || raw === undefined) {
+    return {
+      action: "UNKNOWN",
+      description: "Null/undefined input received",
+      confidence: "low",
+    };
+  }
+
   const trimmed = raw.trim();
   if (!trimmed) return { action: "UNKNOWN", description: "Empty input", confidence: "low" };
 
