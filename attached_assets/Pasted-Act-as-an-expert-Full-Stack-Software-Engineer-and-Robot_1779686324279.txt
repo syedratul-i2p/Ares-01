@@ -1,0 +1,21 @@
+Act as an expert Full-Stack Software Engineer and Robotics Developer. I am building a Mission Control Web Dashboard for my 4WD Mars Rover named "ARES-01". The rover uses an ESP32-S3 (with a built-in OV2640 camera) and two PCA9685 PWM drivers controlling 9 DC motors (4 wheels paired into 2 channels, and a 5DOF Robotic Arm).
+
+I need you to write the complete connection architecture (Backend, Frontend Logic, and Database Integration) based on the following requirements:
+
+1. Technology Stack:
+   - Frontend: HTML5, Tailwind CSS, and Vanilla JavaScript.
+   - Backend/Database: Google Firebase Realtime Database.
+
+2. Hybrid Connection Architecture:
+   - Video Stream: The ESP32-S3 broadcasts an HTTP MJPEG stream on a local IP. In the Frontend, provide a Settings Input Box where I can type the Rover's Local IP Address (e.g., 192.168.0.105). Upon clicking "Connect Camera", update the main black video screen container (<img id="camera-feed">) to pull the live stream from `http://<entered_ip>/stream`.
+   - Control & Telemetry: All control inputs must be synchronized in Real-Time with Firebase Realtime Database. 
+
+3. Three Control Modes Logic (JS to Firebase):
+   - Manual Control: Clicking the Drive Control buttons (Arrow keys/buttons) or adjusting the 5DOF Arm sliders must immediately update Firebase nodes: `ares01/drive/direction` (values: "FORWARD", "BACKWARD", "LEFT", "RIGHT", "STOP") and `ares01/arm/angles` (nodes: base, shoulder, elbow, wrist, gripper with values 0-180).
+   - AI Directive (Text) & Voice Command: Provide text input and voice recognition triggers. When a command is entered, the system will send it to a local Python backend placeholder (where OpenCV/Gemini API will parse it), but for now, simulate it by parsing simple English/Bangla text (e.g., "pick ball", "samne jao") into specific Firebase action nodes: `ares01/autonomous/action`.
+
+4. Telemetry & Connection Status:
+   - Listen to Firebase nodes for live telemetry updates coming from the Rover and display them on the bottom status bar: Distance (`ares01/telemetry/distance`), Solar Voltage (`ares01/telemetry/solar`), Motor Temp (`ares01/telemetry/motor_temp`), and Wi-Fi Signal (`ares01/telemetry/rssi`).
+   - Implement a Heartbeat/Ping checking system: If the rover doesn't update its timestamp in `ares01/telemetry/heartbeat` within 3 seconds, turn the UI top-left status dot to Red ("Disconnected"), otherwise keep it Green ("Connected").
+
+Please generate the modular and clean JavaScript code (app.js) and the Firebase database structure initialization logic to handle this entire communication pipeline flawlessly.
