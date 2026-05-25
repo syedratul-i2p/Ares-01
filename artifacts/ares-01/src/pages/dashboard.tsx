@@ -275,11 +275,8 @@ const CameraView = React.memo(function CameraView({
   const imgRef = useRef<HTMLImageElement>(null);
   return (
     <div
-      className="w-full flex-shrink relative bg-black overflow-hidden flex items-center justify-center"
+      className="w-full h-full relative bg-black overflow-hidden flex items-center justify-center"
       style={{
-        aspectRatio: "16 / 9",
-        maxHeight: "50vh",
-        minHeight: "120px",
         transform: "translate3d(0, 0, 0)",
         willChange: "transform"
       }}
@@ -359,39 +356,39 @@ const DPad = React.memo(function DPad({
       <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Drive Controls</div>
       <div className="flex flex-col items-center gap-1.5 select-none">
         <Button variant="secondary" size="lg"
-          className={`w-16 h-16 rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("forward")}`}
+          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("forward")}`}
           onMouseDown={() => onPress("forward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("forward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-fwd">
-          <ArrowUp className="w-6 h-6" />
+          <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6" />
         </Button>
         <div className="flex gap-1.5">
           <Button variant="secondary" size="lg"
-            className={`w-16 h-16 rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("left")}`}
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("left")}`}
             onMouseDown={() => onPress("left")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("left"); }} onTouchEnd={onRelease}
             data-testid="btn-move-left">
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </Button>
           <Button variant="destructive" size="lg"
-            className="w-16 h-16 rounded-2xl shadow-sm transition-all active:scale-95"
+            className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all active:scale-95"
             onClick={onStop} data-testid="btn-move-stop">
-            <Square className="w-5 h-5 fill-current" />
+            <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
           </Button>
           <Button variant="secondary" size="lg"
-            className={`w-16 h-16 rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("right")}`}
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("right")}`}
             onMouseDown={() => onPress("right")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("right"); }} onTouchEnd={onRelease}
             data-testid="btn-move-right">
-            <ArrowRight className="w-6 h-6" />
+            <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
           </Button>
         </div>
         <Button variant="secondary" size="lg"
-          className={`w-16 h-16 rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("backward")}`}
+          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-75 ${dpadActive("backward")}`}
           onMouseDown={() => onPress("backward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("backward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-back">
-          <ArrowDown className="w-6 h-6" />
+          <ArrowDown className="w-5 h-5 sm:w-6 sm:h-6" />
         </Button>
         <div className="h-5 mt-1">
           <AnimatePresence>
@@ -466,12 +463,12 @@ const ArmControls = React.memo(function ArmControls({
       ctx.stroke();
     }
 
-    // Geometry parameters (scaled to fit nicely in 180x130)
+    // Geometry parameters (scaled to fit nicely in 150x110)
     const x0 = canvas.width / 2; // base center x
-    const y0 = canvas.height - 15; // base center y
-    const L1 = 35; // Shoulder length
-    const L2 = 30; // Elbow length
-    const L3 = 20; // Wrist length
+    const y0 = canvas.height - 12; // base center y
+    const L1 = 28; // Shoulder length
+    const L2 = 24; // Elbow length
+    const L3 = 16; // Wrist length
 
     // Convert angles (0 to 180) to radians
     const baseAngleRad = (joints.base) * Math.PI / 180;
@@ -610,12 +607,12 @@ const ArmControls = React.memo(function ArmControls({
         ))}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center bg-muted/20 border border-border/30 rounded-xl p-3">
-        <div className="relative w-[180px] h-[130px] rounded-lg border border-border/40 bg-card overflow-hidden shrink-0 flex items-center justify-center">
-          <canvas ref={canvasRef} width={180} height={130} className="w-full h-full block" />
+      <div className="flex flex-row gap-3 items-center bg-muted/20 border border-border/30 rounded-xl p-2 w-full">
+        <div className="relative w-[150px] h-[110px] rounded-lg border border-border/40 bg-card overflow-hidden shrink-0 flex items-center justify-center">
+          <canvas ref={canvasRef} width={150} height={110} className="w-full h-full block" />
         </div>
 
-        <div className="flex-1 w-full space-y-1.5">
+        <div className="flex-1 w-full space-y-1">
           {JOINT_ORDER.map(key => {
             const cfg = JOINT_CONFIG[key];
             const value = joints[key];
@@ -1011,7 +1008,7 @@ export default function Dashboard() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="h-dvh bg-background text-foreground flex flex-col font-sans overflow-hidden">
+    <div className="h-dvh w-screen bg-background text-foreground flex flex-col font-sans overflow-hidden justify-between">
 
       {/* Header */}
       <Header
@@ -1041,11 +1038,9 @@ export default function Dashboard() {
         ping={ping}
       />
 
-      {/* Main Responsive Layout Wrapper */}
-      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-
-        {/* LEFT COLUMN: CameraView + TelemetryBar (Desktop only) */}
-        <div className="w-full md:w-[62%] lg:w-[65%] flex flex-col min-h-0 border-b md:border-b-0 md:border-r border-border/40 bg-card/10 shrink-0">
+      {/* Camera View Section (Top - Max 40% Viewport Height Budget) */}
+      <div className="w-full bg-black/20 flex justify-center items-center shrink-0 border-b border-border/40">
+        <div className="w-full max-w-none md:max-w-[calc(38dvh*16/9)] aspect-video max-h-[40vh] md:max-h-[38dvh] relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
           <CameraView
             streamSrc={streamSrc}
             streamError={streamError}
@@ -1053,65 +1048,55 @@ export default function Dashboard() {
             rssi={rssi}
             setStreamError={setStreamError}
           />
-          {/* Telemetry Bar (Desktop only) */}
-          <div className="hidden md:block mt-auto">
-            <TelemetryBar
-              distance={distance}
-              solar={solar}
-              motorTemp={motorTemp}
-              rssi={rssi}
-              fps={fps}
-              pitch={pitch}
-              roll={roll}
-              yaw={yaw}
-              fbStatus={fbStatus}
-            />
+        </div>
+      </div>
+
+      {/* Interactive Control Section (Middle - Max 48% Viewport Height Budget) */}
+      <div className="flex-1 flex flex-col min-h-0 max-h-[48vh] md:max-h-[48dvh] overflow-hidden bg-background">
+        
+        {/* 2. MODE SELECTOR TABS */}
+        <div className="shrink-0 px-4 pt-2.5 pb-1.5 bg-background z-10">
+          <div className="relative flex rounded-xl bg-muted/50 border border-border/50 p-1 gap-0.5 max-w-xl mx-auto">
+            {CONTROL_TABS.map(tab => (
+              <button key={tab.id} onClick={() => setControlMode(tab.id)}
+                className={`relative flex flex-1 items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg z-10 transition-colors duration-150 select-none ${
+                  controlMode === tab.id ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid={`tab-${tab.id}`}>
+                {controlMode === tab.id && (
+                  <motion.div layoutId="tab-pill" className="absolute inset-0 bg-background rounded-lg shadow-sm"
+                    transition={{ type: "spring", stiffness: 500, damping: 38 }} />
+                )}
+                <tab.icon className="w-3.5 h-3.5 relative z-10 shrink-0" />
+                <span className="relative z-10">{tab.label}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Mode Selector + Control Panels (Scrollable) */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-background">
-          
-          {/* 2. MODE SELECTOR TABS */}
-          <div className="shrink-0 px-4 pt-3 pb-2 bg-background z-10">
-            <div className="relative flex rounded-xl bg-muted/50 border border-border/50 p-1 gap-0.5 max-w-xl mx-auto">
-              {CONTROL_TABS.map(tab => (
-                <button key={tab.id} onClick={() => setControlMode(tab.id)}
-                  className={`relative flex flex-1 items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-lg z-10 transition-colors duration-150 select-none ${
-                    controlMode === tab.id ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  data-testid={`tab-${tab.id}`}>
-                  {controlMode === tab.id && (
-                    <motion.div layoutId="tab-pill" className="absolute inset-0 bg-background rounded-lg shadow-sm"
-                      transition={{ type: "spring", stiffness: 500, damping: 38 }} />
-                  )}
-                  <tab.icon className="w-3.5 h-3.5 relative z-10 shrink-0" />
-                  <span className="relative z-10">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* 3. INTERACTIVE CONTROL AREA */}
+        <div className="flex-1 min-h-0 overflow-hidden relative">
+          <AnimatePresence mode="wait" initial={false}>
 
-          {/* 3. INTERACTIVE CONTROL AREA */}
-          <div className="flex-1 min-h-0 overflow-y-auto relative">
-            <AnimatePresence mode="wait" initial={false}>
-
-              {/* ── MANUAL CONTROL ── */}
-              {controlMode === "manual" && (
-                <motion.div key="manual"
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                    {/* LEFT: Drive D-Pad */}
+            {/* ── MANUAL CONTROL ── */}
+            {controlMode === "manual" && (
+              <motion.div key="manual"
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="px-4 py-1 h-full overflow-hidden flex items-center justify-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl w-full mx-auto items-center justify-items-center">
+                  {/* LEFT: Drive D-Pad */}
+                  <div className="flex items-center justify-center w-full">
                     <DPad
                       activeDirection={activeDirection}
                       onPress={handleDirectionPress}
                       onRelease={handleDirectionRelease}
                       onStop={handleStop}
                     />
+                  </div>
 
-                    {/* RIGHT: 5DOF Arm */}
+                  {/* RIGHT: 5DOF Arm */}
+                  <div className="flex items-center justify-center w-full">
                     <ArmControls
                       joints={joints}
                       setJointAngle={setJointAngle}
@@ -1128,157 +1113,156 @@ export default function Dashboard() {
                       startEdit={startEdit}
                     />
                   </div>
-                </motion.div>
-              )}
+                </div>
+              </motion.div>
+            )}
 
-              {/* ── AI DIRECTIVE ── */}
-              {controlMode === "ai" && (
-                <motion.div key="ai"
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="p-4">
-                  <div className="max-w-2xl mx-auto flex flex-col gap-4 pt-2">
-                    <div className="text-center">
-                      <div className="text-sm font-semibold">Autonomous Directive</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        Natural language commands in English or Bengali → Firebase <code className="font-mono text-[10px] bg-muted px-1 rounded">ares01/autonomous/action</code>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Select value={language} onValueChange={setLanguage}>
-                        <SelectTrigger className="w-[110px] shrink-0" data-testid="select-lang">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="bn">Bengali</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <input ref={commandInputRef} type="text" inputMode="text" autoComplete="off"
-                        placeholder={language === "bn" ? "নির্দেশ দিন… যেমন: সামনে যাও, বল তোলো" : "Give command… e.g., go forward, pick ball, scan area"}
-                        value={command}
-                        onChange={e => setCommand(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && handleSendCommand()}
-                        onClick={() => commandInputRef.current?.focus()}
-                        className="cmd-input flex-1 h-10 rounded-lg border border-input bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                        data-testid="input-ai-cmd" />
-                      <Button onClick={handleSendCommand} data-testid="btn-ai-send"
-                        className="h-10 px-4 active:scale-95 transition-transform shrink-0">
-                        <Send className="w-4 h-4" />
-                      </Button>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5">
-                      {["go forward", "turn left", "pick ball", "scan area", "stop", "arm home",
-                        "সামনে যাও", "বামে যাও", "বল তোলো", "থামো"].map(chip => (
-                        <button key={chip} onClick={() => setCommand(chip)}
-                          className="text-[11px] px-2.5 py-1 rounded-full border border-border bg-muted/50 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all font-medium">
-                          {chip}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Command Log → <span className="font-mono normal-case">ares01/autonomous/action</span></div>
-                      <div className="space-y-1.5">
-                        <AnimatePresence initial={false}>
-                          {history.map(cmd => (
-                            <motion.div key={cmd.id} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                              className="flex gap-2.5 items-start p-2.5 rounded-xl bg-muted/40 border border-border/50">
-                              {cmd.status === "ok"
-                                ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
-                                : <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />}
-                              <div className="flex flex-col min-w-0 flex-1">
-                                <span className="text-xs leading-snug">{cmd.text}</span>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] font-mono font-semibold text-primary">{cmd.action}</span>
-                                  <span className="text-[10px] text-muted-foreground">{cmd.time}</span>
-                                </div>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </AnimatePresence>
-                      </div>
+            {/* ── AI DIRECTIVE ── */}
+            {controlMode === "ai" && (
+              <motion.div key="ai"
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="p-4 overflow-hidden h-full flex flex-col justify-center">
+                <div className="max-w-2xl w-full mx-auto flex flex-col gap-2.5">
+                  <div className="text-center">
+                    <div className="text-sm font-semibold">Autonomous Directive</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Natural language commands in English or Bengali → Firebase <code className="font-mono text-[10px] bg-muted px-1 rounded">ares01/autonomous/action</code>
                     </div>
                   </div>
-                </motion.div>
-              )}
 
-              {/* ── VOICE COMMAND ── */}
-              {controlMode === "voice" && (
-                <motion.div key="voice"
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="h-full flex flex-col items-center justify-center gap-6 p-4 min-h-[280px]">
-
-                  <div className="flex items-end justify-center gap-1 h-10">
-                    <AnimatePresence>
-                      {isListening && [0.6, 1, 0.7, 1, 0.5, 0.9, 0.6, 1, 0.7].map((base, i) => (
-                        <motion.span key={i} className="w-1.5 rounded-full bg-primary"
-                          animate={{ scaleY: [base * 0.4, base, base * 0.5, base * 0.9, base * 0.3] }}
-                          transition={{ repeat: Infinity, duration: 0.8 + i * 0.07, ease: "easeInOut" }}
-                          style={{ height: 40, originY: 1, display: "inline-block" }} />
-                      ))}
-                    </AnimatePresence>
-                  </div>
-
-                  <div className="relative flex items-center justify-center">
-                    <AnimatePresence>
-                      {isListening && [1.4, 1.9, 2.5].map((scale, i) => (
-                        <motion.div key={i} className="absolute rounded-full bg-primary/15" style={{ width: 120, height: 120 }}
-                          animate={{ scale: [1, scale], opacity: [0.5, 0] }}
-                          transition={{ repeat: Infinity, duration: 2, delay: i * 0.55, ease: "easeOut" }} />
-                      ))}
-                    </AnimatePresence>
-                    <Button size="lg" variant={isListening ? "default" : "outline"}
-                      className={`w-28 h-28 rounded-full relative z-10 transition-all duration-200 active:scale-95 shadow-lg ${isListening ? "bg-primary text-primary-foreground shadow-primary/25" : ""}`}
-                      onClick={handleVoiceToggle} data-testid="btn-voice-toggle">
-                      <Mic className={`w-9 h-9 ${isListening ? "animate-pulse" : ""}`} />
+                  <div className="flex gap-2">
+                    <Select value={language} onValueChange={setLanguage}>
+                      <SelectTrigger className="w-[110px] shrink-0" data-testid="select-lang">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="bn">Bengali</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <input ref={commandInputRef} type="text" inputMode="text" autoComplete="off"
+                      placeholder={language === "bn" ? "নির্দেশ দিন… যেমন: সামনে যাও, বল তোলো" : "Give command… e.g., go forward, pick ball, scan area"}
+                      value={command}
+                      onChange={e => setCommand(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleSendCommand()}
+                      onClick={() => commandInputRef.current?.focus()}
+                      className="cmd-input flex-1 h-9 rounded-lg border border-input bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                      data-testid="input-ai-cmd" />
+                    <Button onClick={handleSendCommand} data-testid="btn-ai-send"
+                      className="h-9 px-4 active:scale-95 transition-transform shrink-0">
+                      <Send className="w-4 h-4" />
                     </Button>
                   </div>
 
-                  <div className="text-center space-y-1">
-                    {isListening ? (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        className="text-base font-semibold text-primary flex items-center justify-center gap-1">
-                        Listening
-                        <span className="flex gap-0.5">
-                          {[0, 0.2, 0.4].map((delay, i) => (
-                            <motion.span key={i} animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1.5, delay }}>.</motion.span>
-                          ))}
-                        </span>
-                      </motion.div>
-                    ) : (
-                      <p className="text-sm font-medium text-muted-foreground">Tap to start voice command</p>
-                    )}
-                    <p className="text-xs text-muted-foreground/60">
-                      {language === "bn" ? "বাংলা বা ইংরেজিতে বলুন" : "Speak in English or Bengali"} — fires <code className="font-mono text-[10px] bg-muted px-1 rounded">ares01/autonomous/action</code>
-                    </p>
-                    <div className="flex items-center justify-center gap-2 pt-1">
-                      <Select value={language} onValueChange={setLanguage}>
-                        <SelectTrigger className="w-[130px] h-7 text-xs" data-testid="select-voice-lang">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="en">English (en-US)</SelectItem>
-                          <SelectItem value="bn">Bengali (bn-BD)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {["go forward", "turn left", "pick ball", "scan area", "stop", "arm home",
+                      "সামনে যাও", "বামে যাও", "বল তোলো", "থামো"].map(chip => (
+                      <button key={chip} onClick={() => setCommand(chip)}
+                        className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-muted/50 hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-foreground transition-all font-medium">
+                        {chip}
+                      </button>
+                    ))}
                   </div>
 
-                </motion.div>
-              )}
+                  <div className="flex flex-col min-h-0">
+                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Command Log</div>
+                    <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
+                      <AnimatePresence initial={false}>
+                        {history.map(cmd => (
+                          <motion.div key={cmd.id} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                            className="flex gap-2 items-start p-1.5 rounded-lg bg-muted/40 border border-border/50">
+                            {cmd.status === "ok"
+                              ? <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+                              : <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />}
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-[11px] leading-snug">{cmd.text}</span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[9px] font-mono font-semibold text-primary">{cmd.action}</span>
+                                <span className="text-[9px] text-muted-foreground">{cmd.time}</span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
-            </AnimatePresence>
-          </div>
+            {/* ── VOICE COMMAND ── */}
+            {controlMode === "voice" && (
+              <motion.div key="voice"
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="h-full flex flex-col items-center justify-center gap-3 p-4 min-h-[180px] overflow-hidden">
+
+                <div className="flex items-end justify-center gap-1 h-7">
+                  <AnimatePresence>
+                    {isListening && [0.6, 1, 0.7, 1, 0.5, 0.9, 0.6, 1, 0.7].map((base, i) => (
+                      <motion.span key={i} className="w-1 rounded-full bg-primary"
+                        animate={{ scaleY: [base * 0.4, base, base * 0.5, base * 0.9, base * 0.3] }}
+                        transition={{ repeat: Infinity, duration: 0.8 + i * 0.07, ease: "easeInOut" }}
+                        style={{ height: 24, originY: 1, display: "inline-block" }} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+
+                <div className="relative flex items-center justify-center">
+                  <AnimatePresence>
+                    {isListening && [1.3, 1.6, 2.0].map((scale, i) => (
+                      <motion.div key={i} className="absolute rounded-full bg-primary/15" style={{ width: 70, height: 70 }}
+                        animate={{ scale: [1, scale], opacity: [0.5, 0] }}
+                        transition={{ repeat: Infinity, duration: 2, delay: i * 0.55, ease: "easeOut" }} />
+                    ))}
+                  </AnimatePresence>
+                  <Button size="lg" variant={isListening ? "default" : "outline"}
+                    className={`w-18 h-18 rounded-full relative z-10 transition-all duration-200 active:scale-95 shadow-md ${isListening ? "bg-primary text-primary-foreground shadow-primary/25" : ""}`}
+                    onClick={handleVoiceToggle} data-testid="btn-voice-toggle">
+                    <Mic className={`w-6 h-6 ${isListening ? "animate-pulse" : ""}`} />
+                  </Button>
+                </div>
+
+                <div className="text-center space-y-0.5">
+                  {isListening ? (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                      className="text-xs font-semibold text-primary flex items-center justify-center gap-1">
+                      Listening
+                      <span className="flex gap-0.5">
+                        {[0, 0.2, 0.4].map((delay, i) => (
+                          <motion.span key={i} animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1.5, delay }}>.</motion.span>
+                        ))}
+                      </span>
+                    </motion.div>
+                  ) : (
+                    <p className="text-xs font-medium text-muted-foreground">Tap to start voice command</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground/60">
+                    {language === "bn" ? "বাংলা বা ইংরেজিতে বলুন" : "Speak in English or Bengali"} — fires <code className="font-mono text-[9px] bg-muted px-1 rounded">ares01/autonomous/action</code>
+                  </p>
+                  <div className="flex items-center justify-center gap-2 pt-0.5">
+                    <Select value={language} onValueChange={setLanguage}>
+                      <SelectTrigger className="w-[110px] h-6 text-[10px]" data-testid="select-voice-lang">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English (en-US)</SelectItem>
+                        <SelectItem value="bn">Bengali (bn-BD)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+              </motion.div>
+            )}
+
+          </AnimatePresence>
         </div>
-
       </div>
 
-      {/* Telemetry Bar (Mobile only) */}
-      <div className="block md:hidden shrink-0">
+      {/* Telemetry Bar (Single Instance - Pinned Flat at Bottom) */}
+      <div className="w-full shrink-0 mt-auto bg-card/80 border-t z-10 max-h-[8vh] md:max-h-[10vh]">
         <TelemetryBar
           distance={distance}
           solar={solar}
