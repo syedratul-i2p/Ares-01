@@ -1038,9 +1038,9 @@ export default function Dashboard() {
         ping={ping}
       />
 
-      {/* Camera View Section (Top - Max 50% Viewport Height Budget) */}
+      {/* Camera View Section (Top - Max 55% Viewport Height Budget) */}
       <div className="w-full bg-black/20 flex justify-center items-center shrink-0 border-b border-border/40">
-        <div className="w-full max-w-none md:max-w-[calc(48dvh*16/9)] aspect-video max-h-[50vh] md:max-h-[48dvh] relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
+        <div className="w-full max-w-none md:max-w-[calc(52dvh*16/9)] aspect-video max-h-[55vh] md:max-h-[52dvh] relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
           <CameraView
             streamSrc={streamSrc}
             streamError={streamError}
@@ -1051,8 +1051,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Interactive Control Section (Middle - Max 40% Viewport Height Budget) */}
-      <div className="flex-1 flex flex-col min-h-0 max-h-[40vh] md:max-h-[39dvh] overflow-hidden bg-background">
+      {/* Interactive Control Section (Middle - Max 35% Viewport Height Budget) */}
+      <div className="flex-1 flex flex-col min-h-0 max-h-[35vh] md:max-h-[35dvh] overflow-hidden bg-background">
         
         {/* 2. MODE SELECTOR TABS */}
         <div className="shrink-0 px-4 pt-2.5 pb-1.5 bg-background z-10">
