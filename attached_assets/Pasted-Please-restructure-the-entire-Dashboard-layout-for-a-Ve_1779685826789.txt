@@ -1,0 +1,34 @@
+Please restructure the entire Dashboard layout for a "Vertical Stack" architecture to optimize usability and visibility. The goal is to have the Camera View as the primary focus on top, with the interactive controls and telemetry logically organized below it.
+
+Follow these specific layout and design instructions:
+
+1. PRIMARY CAMERA VIEW (Top Section)
+- Place the Live Video Stream (ESP32-CAM feed) at the top of the dashboard. 
+- It should span the full width (or a large centered container) and maintain a fixed aspect ratio (like 16:9) to ensure it stays perfectly visible regardless of which control mode is selected below.
+- Include a subtle overlay for "Connection Status" and "Battery Status" on the corners of the video feed.
+
+2. MODE SELECTOR TABS (Middle Section)
+- Just below the video feed, place a slim, professional segmented control or tab bar to switch between: "Manual Control", "AI Directive", and "Voice Command".
+- Use a high-end SaaS aesthetic (rounded pill-shape or flat underline tabs).
+
+3. INTERACTIVE CONTROL AREA (Below Tabs)
+- This area changes based on the selected tab:
+  - MANUAL CONTROL: Implement a 2-Column Grid. 
+    * Left Side: 4WD Rover Directional Buttons (D-Pad) with a sleek, ergonomic design.
+    * Right Side: 5DOF Robotic Arm Controls (Sliders/Buttons) organized vertically or in a compact grid.
+  - AI DIRECTIVE: A spacious, centered text input field for commands with a mini command history log below it.
+  - VOICE COMMAND: A clean, centered interface featuring a large microphone button and a modern waveform visualizer.
+
+4. COMPACT TELEMETRY BAR (Bottom Section)
+- At the very bottom of the page, create a "Micro-Telemetry Bar". 
+- Instead of large cards, use small, horizontal status indicators with icons for: Distance (cm), Solar Array (V/%), AI Vision Status, and Motor Temperature/Load.
+- Keep the font size small and professional (e.g., text-xs or text-sm) to save screen space while remaining readable.
+
+5. RESPONSIVENESS & THEME
+- Ensure that switching between tabs is fluid and does not resize the video stream on top. 
+- The entire layout must fit within the screen height (no excessive scrolling).
+- Maintain the "Modern Professional" look (Light/Dark mode) with subtle borders, soft shadows, and indigo/slate accents. Avoid any cyberpunk or neon styles.
+
+6. FUNCTIONALITY CHECK
+- Ensure the AI Directive text box focuses properly and triggers the virtual keyboard on mobile.
+- Make sure all Manual Control buttons support "Hold-to-Move" and "Release-to-Stop" logic.
