@@ -488,7 +488,7 @@ export default function Dashboard() {
         {/* 1. CAMERA VIEW — 16:9 aspect ratio, capped at 55vh on large screens */}
         <div
           className="w-full shrink-0 relative bg-black overflow-hidden"
-          style={{ height: "min(56.25vw, 55vh)" }}
+          style={{ height: "min(56.25vw, 65vh)" }}
         >
           {/* MJPEG stream */}
           {streamSrc && !streamError ? (
@@ -549,7 +549,7 @@ export default function Dashboard() {
 
         {/* 2. MODE SELECTOR TABS */}
         <div className="shrink-0 px-4 pt-3 pb-0 bg-background z-10">
-          <div className="relative flex rounded-xl bg-muted/50 border border-border/50 p-1 gap-0.5 max-w-3xl mx-auto">
+          <div className="relative flex rounded-xl bg-muted/50 border border-border/50 p-1 gap-0.5 max-w-xl mx-auto">
             {CONTROL_TABS.map(tab => (
               <button key={tab.id} onClick={() => setControlMode(tab.id)}
                 className={`relative flex flex-1 items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-lg z-10 transition-colors duration-150 select-none ${
@@ -577,7 +577,7 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto w-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
 
                   {/* LEFT: Drive D-Pad */}
                   <div className="flex flex-col items-center justify-center gap-3 py-2">
@@ -707,7 +707,7 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className="p-4">
-                <div className="max-w-4xl mx-auto flex flex-col gap-4 pt-2 w-full">
+                <div className="max-w-2xl mx-auto flex flex-col gap-4 pt-2">
                   <div className="text-center">
                     <div className="text-sm font-semibold">Autonomous Directive</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
