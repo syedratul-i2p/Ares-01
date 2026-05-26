@@ -86,40 +86,40 @@ const Header = React.memo(function Header({
   setTheme
 }: HeaderProps) {
   return (
-    <header className="h-12 border-b border-white/5 bg-black/20 backdrop-blur-md flex items-center justify-between px-5 shrink-0 z-20">
+    <header className="h-12 border border-border/60 bg-white dark:bg-white/[0.03] backdrop-blur-xl flex items-center justify-between px-5 shrink-0 z-20 shadow-sm dark:shadow-none">
       <div className="flex items-center gap-3">
-        <h1 className="font-bold text-base tracking-tight">ARES-01</h1>
-        <span className="text-muted-foreground text-xs font-medium hidden sm:inline">Rover Mission Control</span>
+        <h1 className="font-bold text-base tracking-tight text-gray-900 dark:text-white">ARES-01</h1>
+        <span className="text-gray-500 dark:text-gray-400 text-xs font-medium hidden sm:inline">Rover Mission Control</span>
         <Badge
           variant="outline"
           className={`text-[10px] h-5 transition-colors duration-500 ${
             roverOnline
-              ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"
-              : "bg-red-500/10 text-red-500 border-red-500/20"
+              ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30"
+              : "bg-red-500/10 text-red-600 dark:text-red-500 border-red-500/30"
           }`}
         >
           <span className={`w-1.5 h-1.5 rounded-full mr-1.5 transition-colors duration-500 ${roverOnline ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
           {roverOnline ? "ROVER ONLINE" : "ROVER OFFLINE"}
         </Badge>
         {fbStatus === "not-configured" && (
-          <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1">
+          <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/10 text-amber-700 dark:text-amber-600 border-amber-500/30 gap-1">
             <Database className="w-2.5 h-2.5" />
             Firebase not configured
           </Badge>
         )}
         {fbStatus === "ready" && (
-          <Badge variant="outline" className="text-[10px] h-5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 gap-1">
+          <Badge variant="outline" className="text-[10px] h-5 bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30 gap-1">
             <Database className="w-2.5 h-2.5" />
             Firebase live
           </Badge>
         )}
       </div>
       <div className="flex items-center gap-1">
-        <Button variant={showSettings ? "secondary" : "ghost"} size="icon" className="h-8 w-8"
+        <Button variant={showSettings ? "secondary" : "ghost"} size="icon" className="h-8 w-8 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
           onClick={() => setShowSettings(s => !s)} data-testid="button-settings">
           {showSettings ? <X className="w-3.5 h-3.5" /> : <Settings className="w-3.5 h-3.5" />}
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8"
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")} data-testid="button-theme-toggle">
           {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
         </Button>
@@ -182,32 +182,47 @@ const SettingsPanel = React.memo(function SettingsPanel({
       {showSettings && (
         <motion.div key="settings"
           initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.22, ease: "easeInOut" }}
-          className="overflow-hidden border-b border-white/5 bg-black/40 backdrop-blur-md z-10 shrink-0">
-          <div className="px-5 py-4 max-w-6xl mx-auto w-full space-y-4">
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          className="overflow-hidden border-b border-border/40 bg-gradient-to-b from-slate-50 via-white to-slate-50/80 dark:from-[#0d1117] dark:via-[#0f1520] dark:to-[#0d1117] backdrop-blur-xl z-10 shrink-0 relative">
+
+          {/* Subtle top glow line */}
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
+
+          <div className="px-5 py-5 max-w-6xl mx-auto w-full space-y-4">
             {fbStatus === "not-configured" && (
-              <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/8">
-                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                <div className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+              <motion.div
+                initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-400/30 bg-gradient-to-r from-amber-500/5 to-orange-500/5 dark:from-amber-500/10 dark:to-orange-500/10"
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                </div>
+                <div className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
                   <p className="font-semibold">Firebase Realtime Database not configured</p>
-                  <p className="text-amber-600/80 dark:text-amber-400/80">
+                  <p className="text-amber-600/80 dark:text-amber-400/70 leading-relaxed">
                     Add your Firebase project credentials to the Secrets config:<br />
-                    <span className="font-mono">VITE_FIREBASE_API_KEY</span> ·{" "}
-                    <span className="font-mono">VITE_FIREBASE_DATABASE_URL</span> ·{" "}
-                    <span className="font-mono">VITE_FIREBASE_PROJECT_ID</span> ·{" "}
-                    <span className="font-mono">VITE_FIREBASE_APP_ID</span>
+                    <span className="font-mono text-[10px]">VITE_FIREBASE_API_KEY</span> ·{" "}
+                    <span className="font-mono text-[10px]">VITE_FIREBASE_DATABASE_URL</span> ·{" "}
+                    <span className="font-mono text-[10px]">VITE_FIREBASE_PROJECT_ID</span> ·{" "}
+                    <span className="font-mono text-[10px]">VITE_FIREBASE_APP_ID</span>
                   </p>
                 </div>
-              </div>
+              </motion.div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Camera className="w-3 h-3" /> ESP32-CAM Stream
-                </label>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              {/* Card 1: ESP32-CAM Stream */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+                className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/50 dark:border-white/[0.06] bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none hover:border-indigo-500/30 dark:hover:border-indigo-500/20 transition-all duration-300 group">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500/15 to-cyan-500/15 flex items-center justify-center group-hover:from-blue-500/25 group-hover:to-cyan-500/25 transition-all duration-300">
+                    <Camera className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">ESP32-CAM Stream</label>
+                </div>
                 <div className="flex gap-1.5">
                   <Input
-                    className="h-8 text-xs bg-background font-mono flex-1"
+                    className="h-8 text-xs bg-gray-50 dark:bg-white/[0.04] font-mono flex-1 border-border/60 dark:border-white/[0.08] focus:border-blue-500/50"
                     placeholder="192.168.1.100"
                     value={roverIp}
                     onChange={e => setRoverIp(e.target.value)}
@@ -220,7 +235,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                       <X className="w-3 h-3 mr-1" /> Disconnect
                     </Button>
                   ) : (
-                    <Button size="sm" className="h-8 text-xs shrink-0"
+                    <Button size="sm" className="h-8 text-xs shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-0 shadow-sm"
                       onClick={handleConnectCamera} disabled={!roverIp.trim()} data-testid="btn-connect-camera">
                       <Camera className="w-3 h-3 mr-1" /> Connect
                     </Button>
@@ -231,13 +246,19 @@ const SettingsPanel = React.memo(function SettingsPanel({
                     {streamError ? "⚠ Stream unreachable" : `▶ ${streamSrc}`}
                   </p>
                 )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity className="w-3 h-3" /> WebSocket Endpoint
-                </label>
+              </motion.div>
+
+              {/* Card 2: WebSocket Endpoint */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/50 dark:border-white/[0.06] bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none hover:border-emerald-500/30 dark:hover:border-emerald-500/20 transition-all duration-300 group">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500/15 to-teal-500/15 flex items-center justify-center group-hover:from-emerald-500/25 group-hover:to-teal-500/25 transition-all duration-300">
+                    <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">WebSocket Endpoint</label>
+                </div>
                 <div className="flex gap-1.5">
-                  <Input className="h-8 text-xs bg-background font-mono flex-1"
+                  <Input className="h-8 text-xs bg-gray-50 dark:bg-white/[0.04] font-mono flex-1 border-border/60 dark:border-white/[0.08] focus:border-emerald-500/50"
                     placeholder="ws://192.168.1.100:81"
                     value={wsUrl}
                     onChange={e => setWsUrl(e.target.value)}
@@ -249,7 +270,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                       <WifiOff className="w-3 h-3 mr-1" /> Disconnect
                     </Button>
                   ) : (
-                    <Button size="sm" className="h-8 text-xs shrink-0"
+                    <Button size="sm" className="h-8 text-xs shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border-0 shadow-sm"
                       onClick={handleConnectWs} disabled={roverConnectionStatus === "connecting"} data-testid="btn-connect-ws">
                       {roverConnectionStatus === "connecting"
                         ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
@@ -259,58 +280,76 @@ const SettingsPanel = React.memo(function SettingsPanel({
                   )}
                 </div>
                 {ping !== null && roverConnectionStatus === "connected" && (
-                  <p className="text-[10px] font-mono text-green-600 dark:text-green-400">✓ Connected — {ping}ms latency</p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <p className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">Connected — {ping}ms latency</p>
+                  </div>
                 )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Database className="w-3 h-3" /> Firebase Realtime DB
-                </label>
-                <div className="text-[10px] font-mono text-muted-foreground space-y-0.5 bg-muted/40 rounded-md p-2 border border-border/50">
-                  <div><span className="text-foreground/60">drive:</span> ares01/drive/direction</div>
-                  <div><span className="text-foreground/60">arm:</span> ares01/arm/angles</div>
-                  <div><span className="text-foreground/60">cmd:</span> ares01/autonomous/action</div>
-                  <div><span className="text-foreground/60">telemetry:</span> ares01/telemetry/*</div>
-                  <div><span className="text-foreground/60">heartbeat:</span> ares01/telemetry/heartbeat</div>
+              </motion.div>
+
+              {/* Card 3: Firebase Realtime DB */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/50 dark:border-white/[0.06] bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none hover:border-violet-500/30 dark:hover:border-violet-500/20 transition-all duration-300 group">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500/15 to-purple-500/15 flex items-center justify-center group-hover:from-violet-500/25 group-hover:to-purple-500/25 transition-all duration-300">
+                    <Database className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Firebase Realtime DB</label>
                 </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity className="w-3 h-3 text-primary animate-pulse" /> Live Diagnostic/Status
-                </label>
-                <div className="text-[10px] font-mono text-muted-foreground space-y-1 bg-muted/40 rounded-md p-2 border border-border/50">
+                <div className="text-[10px] font-mono space-y-1 bg-gray-50/80 dark:bg-white/[0.02] rounded-lg p-2.5 border border-border/30 dark:border-white/[0.04]">
+                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-violet-400/60" /><span className="text-gray-400 dark:text-gray-500">drive:</span> <span className="text-gray-700 dark:text-gray-300">ares01/drive/direction</span></div>
+                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-blue-400/60" /><span className="text-gray-400 dark:text-gray-500">arm:</span> <span className="text-gray-700 dark:text-gray-300">ares01/arm/angles</span></div>
+                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-cyan-400/60" /><span className="text-gray-400 dark:text-gray-500">cmd:</span> <span className="text-gray-700 dark:text-gray-300">ares01/autonomous/action</span></div>
+                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-teal-400/60" /><span className="text-gray-400 dark:text-gray-500">telemetry:</span> <span className="text-gray-700 dark:text-gray-300">ares01/telemetry/*</span></div>
+                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-emerald-400/60" /><span className="text-gray-400 dark:text-gray-500">heartbeat:</span> <span className="text-gray-700 dark:text-gray-300">ares01/telemetry/heartbeat</span></div>
+                </div>
+              </motion.div>
+
+              {/* Card 4: Live Diagnostic/Status */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/50 dark:border-white/[0.06] bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none hover:border-rose-500/30 dark:hover:border-rose-500/20 transition-all duration-300 group">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500/15 to-orange-500/15 flex items-center justify-center group-hover:from-rose-500/25 group-hover:to-orange-500/25 transition-all duration-300">
+                    <Activity className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 animate-pulse" />
+                  </div>
+                  <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Live Diagnostics</label>
+                </div>
+                <div className="text-[10px] font-mono space-y-1.5 bg-gray-50/80 dark:bg-white/[0.02] rounded-lg p-2.5 border border-border/30 dark:border-white/[0.04]">
                   <div className="flex justify-between items-center">
-                    <span>Range/Dist:</span>
-                    <span className="font-semibold text-foreground">{distance} cm</span>
+                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Ruler className="w-2.5 h-2.5" /> Range</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">{distance} cm</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Solar Array:</span>
-                    <span className="font-semibold text-yellow-500">{solar.toFixed(1)}V</span>
+                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Zap className="w-2.5 h-2.5" /> Solar</span>
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">{solar.toFixed(1)}V</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>AI Vision:</span>
-                    <span className="text-primary font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> YOLOv8
+                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Cpu className="w-2.5 h-2.5" /> AI Vision</span>
+                    <span className="text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> YOLOv8
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Motor Temp:</span>
-                    <span className={`font-semibold ${motorTemp > 60 ? "text-red-500 font-bold" : motorTemp > 45 ? "text-orange-500" : "text-foreground"}`}>
+                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Thermometer className="w-2.5 h-2.5" /> Motor</span>
+                    <span className={`font-semibold ${motorTemp > 60 ? "text-red-500 font-bold" : motorTemp > 45 ? "text-orange-500" : "text-gray-800 dark:text-gray-200"}`}>
                       {motorTemp.toFixed(1)}°C
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>IMU (P/R/Y):</span>
-                    <span className="font-semibold text-foreground">{pitch}°/{roll}°/{yaw}°</span>
+                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Radio className="w-2.5 h-2.5" /> IMU</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">{pitch}°/{roll}°/{yaw}°</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Signal/FPS:</span>
-                    <span className="font-semibold text-foreground">{rssi} dBm / {fps} FPS</span>
+                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Signal className="w-2.5 h-2.5" /> Signal</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">{rssi} dBm / {fps} FPS</span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
+
+          {/* Subtle bottom glow line */}
+          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
         </motion.div>
       )}
     </AnimatePresence>
