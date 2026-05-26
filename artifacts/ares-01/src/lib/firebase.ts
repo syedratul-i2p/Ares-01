@@ -233,3 +233,52 @@ export function subscribeTelemetry(
     if (heartbeatTimer) clearTimeout(heartbeatTimer);
   };
 }
+
+// ─── Config & System Actions ──────────────────────────────────────────────────
+
+export async function setMaxSpeed(speed: number): Promise<void> {
+  const r = dbRef("ares01/config/maxSpeed");
+  if (!r) return;
+  try {
+    await set(r, speed);
+  } catch (err) {
+    console.warn("[ARES-01] Max speed write failed:", err);
+  }
+}
+
+export async function triggerReboot(): Promise<void> {
+  const r = dbRef("ares01/system/reboot");
+  if (!r) return;
+  try {
+    await set(r, true);
+  } catch (err) {
+    console.warn("[ARES-01] Reboot trigger failed:", err);
+  }
+}
+
+export async function setFirebaseControlMode(mode: string): Promise<void> {
+  const r = dbRef("ares01/mode");
+  if (!r) return;
+  try {
+    await set(r, mode.toUpperCase());
+  } catch (err) {
+    console.warn("[ARES-01] Mode write failed:", err);
+  }
+}
+
+export async function setFirebaseLanguage(language: string): Promise<void> {
+  const r = dbRef("ares01/config/language");
+  if (!r) return;
+  try {
+    await set(r, language);
+  } catch (err) {
+    console.warn("[ARES-01] Language write failed:", err);
+  }
+}
+
+export async function writePingRTT(timestamp: number): Promise<void> {
+  const r = dbRef("ares01/system/ping_test");
+  if (!r) return;
+  await set(r, timestamp);
+}
+

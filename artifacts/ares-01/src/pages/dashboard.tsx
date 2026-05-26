@@ -18,6 +18,11 @@ import {
   setArmAngles,
   sendAutonomousCommand,
   subscribeTelemetry,
+  setMaxSpeed,
+  triggerReboot,
+  setFirebaseControlMode,
+  setFirebaseLanguage,
+  writePingRTT,
   type DriveDirection,
   type ArmAngles,
 } from "@/lib/firebase";
@@ -68,6 +73,13 @@ const DEFAULT_JOINTS: ArmAngles = { base: 90, shoulder: 90, elbow: 90, wrist: 90
 
 // ─── Sub-Components (Memoized to prevent unnecessary re-renders) ───────────────
 
+const getPingColorClass = (pingVal: number | null) => {
+  if (pingVal === null) return "text-slate-400 dark:text-slate-500";
+  if (pingVal < 60) return "text-emerald-600 dark:text-emerald-400";
+  if (pingVal <= 150) return "text-amber-500 dark:text-amber-400";
+  return "text-rose-600 dark:text-rose-400";
+};
+
 interface HeaderProps {
   roverOnline: boolean;
   fbStatus: "ready" | "not-configured";
@@ -75,6 +87,7 @@ interface HeaderProps {
   setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
   theme: string;
   setTheme: (theme: any) => void;
+  ping: number | null;
 }
 
 const Header = React.memo(function Header({
@@ -83,7 +96,8 @@ const Header = React.memo(function Header({
   showSettings,
   setShowSettings,
   theme,
-  setTheme
+  setTheme,
+  ping
 }: HeaderProps) {
   return (
     <header className="h-12 border border-border/60 bg-white dark:bg-white/[0.03] backdrop-blur-xl flex items-center justify-between px-5 shrink-0 z-20 shadow-sm dark:shadow-none">
@@ -113,6 +127,12 @@ const Header = React.memo(function Header({
             Firebase live
           </Badge>
         )}
+        {fbStatus === "ready" && ping !== null && (
+          <Badge variant="outline" className="text-[10px] h-5 bg-slate-50 dark:bg-white/5 border-border/30 dark:border-white/5 gap-1.5 font-mono select-none">
+            <span className={`w-1.5 h-1.5 rounded-full animate-pulse bg-current ${getPingColorClass(ping)}`} />
+            <span className={`${getPingColorClass(ping)}`}>{ping}ms</span>
+          </Badge>
+        )}
       </div>
       <div className="flex items-center gap-1">
         <Button variant={showSettings ? "secondary" : "ghost"} size="icon" className="h-8 w-8 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
@@ -130,7 +150,9 @@ const Header = React.memo(function Header({
 
 interface SettingsPanelProps {
   showSettings: boolean;
+  setShowSettings: (val: boolean) => void;
   fbStatus: "ready" | "not-configured";
+  roverOnline: boolean;
   roverIp: string;
   setRoverIp: (val: string) => void;
   streamSrc: string | null;
@@ -143,19 +165,15 @@ interface SettingsPanelProps {
   handleConnectWs: () => void;
   handleDisconnectWs: () => void;
   ping: number | null;
-  distance: number;
-  solar: number;
-  motorTemp: number;
-  rssi: number;
-  fps: number;
-  pitch: number;
-  roll: number;
-  yaw: number;
+  rebooting: boolean;
+  handleReboot: () => void;
 }
 
 const SettingsPanel = React.memo(function SettingsPanel({
   showSettings,
+  setShowSettings,
   fbStatus,
+  roverOnline,
   roverIp,
   setRoverIp,
   streamSrc,
@@ -168,189 +186,224 @@ const SettingsPanel = React.memo(function SettingsPanel({
   handleConnectWs,
   handleDisconnectWs,
   ping,
-  distance,
-  solar,
-  motorTemp,
-  rssi,
-  fps,
-  pitch,
-  roll,
-  yaw
+  rebooting,
+  handleReboot
 }: SettingsPanelProps) {
   return (
     <AnimatePresence>
       {showSettings && (
-        <motion.div key="settings"
-          initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          className="overflow-hidden border-b border-border/40 bg-gradient-to-b from-slate-50 via-white to-slate-50/80 dark:from-[#0d1117] dark:via-[#0f1520] dark:to-[#0d1117] backdrop-blur-xl z-10 shrink-0 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop blur background */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowSettings(false)}
+          />
+          {/* Settings Overlay Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            className="w-full max-w-md bg-white/95 dark:bg-slate-950/80 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl relative overflow-hidden z-10 text-slate-900 dark:text-white flex flex-col max-h-[90vh]"
+          >
+            {/* Subtle top glow line */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
 
-          {/* Subtle top glow line */}
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
-
-          <div className="px-5 py-5 max-w-6xl mx-auto w-full space-y-4">
-            {fbStatus === "not-configured" && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-400/30 bg-gradient-to-r from-amber-500/5 to-orange-500/5 dark:from-amber-500/10 dark:to-orange-500/10"
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-black/10 dark:border-white/10 shrink-0">
+              <div className="flex flex-col">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">System Settings</h2>
+                <span className="text-[9px] text-indigo-600 dark:text-indigo-400 font-mono">ARES-01 MISSION CONFIGURATION</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg text-slate-700 dark:text-white/70 hover:text-slate-950 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+                onClick={() => setShowSettings(false)}
               >
-                <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
-                </div>
-                <div className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
-                  <p className="font-semibold">Firebase Realtime Database not configured</p>
-                  <p className="text-amber-600/80 dark:text-amber-400/70 leading-relaxed">
-                    Add your Firebase project credentials to the Secrets config:<br />
-                    <span className="font-mono text-[10px]">VITE_FIREBASE_API_KEY</span> ·{" "}
-                    <span className="font-mono text-[10px]">VITE_FIREBASE_DATABASE_URL</span> ·{" "}
-                    <span className="font-mono text-[10px]">VITE_FIREBASE_PROJECT_ID</span> ·{" "}
-                    <span className="font-mono text-[10px]">VITE_FIREBASE_APP_ID</span>
-                  </p>
-                </div>
-              </motion.div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              {/* Card 1: ESP32-CAM Stream */}
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-                className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/50 dark:border-white/[0.06] bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none hover:border-indigo-500/30 dark:hover:border-indigo-500/20 transition-all duration-300 group">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500/15 to-cyan-500/15 flex items-center justify-center group-hover:from-blue-500/25 group-hover:to-cyan-500/25 transition-all duration-300">
-                    <Camera className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">ESP32-CAM Stream</label>
-                </div>
-                <div className="flex gap-1.5">
-                  <Input
-                    className="h-8 text-xs bg-gray-50 dark:bg-white/[0.04] font-mono flex-1 border-border/60 dark:border-white/[0.08] focus:border-blue-500/50"
-                    placeholder="192.168.1.100"
-                    value={roverIp}
-                    onChange={e => setRoverIp(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleConnectCamera()}
-                    data-testid="input-rover-ip"
-                  />
-                  {streamSrc ? (
-                    <Button variant="outline" size="sm" className="h-8 text-xs border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 shrink-0"
-                      onClick={handleDisconnectCamera} data-testid="btn-disconnect-camera">
-                      <X className="w-3 h-3 mr-1" /> Disconnect
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="h-8 text-xs shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-0 shadow-sm"
-                      onClick={handleConnectCamera} disabled={!roverIp.trim()} data-testid="btn-connect-camera">
-                      <Camera className="w-3 h-3 mr-1" /> Connect
-                    </Button>
-                  )}
-                </div>
-                {streamSrc && (
-                  <p className="text-[10px] font-mono text-muted-foreground truncate">
-                    {streamError ? "⚠ Stream unreachable" : `▶ ${streamSrc}`}
-                  </p>
-                )}
-              </motion.div>
-
-              {/* Card 2: WebSocket Endpoint */}
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/50 dark:border-white/[0.06] bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none hover:border-emerald-500/30 dark:hover:border-emerald-500/20 transition-all duration-300 group">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500/15 to-teal-500/15 flex items-center justify-center group-hover:from-emerald-500/25 group-hover:to-teal-500/25 transition-all duration-300">
-                    <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">WebSocket Endpoint</label>
-                </div>
-                <div className="flex gap-1.5">
-                  <Input className="h-8 text-xs bg-gray-50 dark:bg-white/[0.04] font-mono flex-1 border-border/60 dark:border-white/[0.08] focus:border-emerald-500/50"
-                    placeholder="ws://192.168.1.100:81"
-                    value={wsUrl}
-                    onChange={e => setWsUrl(e.target.value)}
-                    data-testid="input-ws-url"
-                  />
-                  {roverConnectionStatus === "connected" ? (
-                    <Button variant="outline" size="sm" className="h-8 text-xs border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 shrink-0"
-                      onClick={handleDisconnectWs} data-testid="btn-disconnect-ws">
-                      <WifiOff className="w-3 h-3 mr-1" /> Disconnect
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="h-8 text-xs shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border-0 shadow-sm"
-                      onClick={handleConnectWs} disabled={roverConnectionStatus === "connecting"} data-testid="btn-connect-ws">
-                      {roverConnectionStatus === "connecting"
-                        ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        : <Wifi className="w-3 h-3 mr-1" />}
-                      {roverConnectionStatus === "connecting" ? "Connecting…" : "Connect"}
-                    </Button>
-                  )}
-                </div>
-                {ping !== null && roverConnectionStatus === "connected" && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <p className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">Connected — {ping}ms latency</p>
-                  </div>
-                )}
-              </motion.div>
-
-              {/* Card 3: Firebase Realtime DB */}
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/50 dark:border-white/[0.06] bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none hover:border-violet-500/30 dark:hover:border-violet-500/20 transition-all duration-300 group">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500/15 to-purple-500/15 flex items-center justify-center group-hover:from-violet-500/25 group-hover:to-purple-500/25 transition-all duration-300">
-                    <Database className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
-                  </div>
-                  <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Firebase Realtime DB</label>
-                </div>
-                <div className="text-[10px] font-mono space-y-1 bg-gray-50/80 dark:bg-white/[0.02] rounded-lg p-2.5 border border-border/30 dark:border-white/[0.04]">
-                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-violet-400/60" /><span className="text-gray-400 dark:text-gray-500">drive:</span> <span className="text-gray-700 dark:text-gray-300">ares01/drive/direction</span></div>
-                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-blue-400/60" /><span className="text-gray-400 dark:text-gray-500">arm:</span> <span className="text-gray-700 dark:text-gray-300">ares01/arm/angles</span></div>
-                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-cyan-400/60" /><span className="text-gray-400 dark:text-gray-500">cmd:</span> <span className="text-gray-700 dark:text-gray-300">ares01/autonomous/action</span></div>
-                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-teal-400/60" /><span className="text-gray-400 dark:text-gray-500">telemetry:</span> <span className="text-gray-700 dark:text-gray-300">ares01/telemetry/*</span></div>
-                  <div className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-emerald-400/60" /><span className="text-gray-400 dark:text-gray-500">heartbeat:</span> <span className="text-gray-700 dark:text-gray-300">ares01/telemetry/heartbeat</span></div>
-                </div>
-              </motion.div>
-
-              {/* Card 4: Live Diagnostic/Status */}
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-border/50 dark:border-white/[0.06] bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none hover:border-rose-500/30 dark:hover:border-rose-500/20 transition-all duration-300 group">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500/15 to-orange-500/15 flex items-center justify-center group-hover:from-rose-500/25 group-hover:to-orange-500/25 transition-all duration-300">
-                    <Activity className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 animate-pulse" />
-                  </div>
-                  <label className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Live Diagnostics</label>
-                </div>
-                <div className="text-[10px] font-mono space-y-1.5 bg-gray-50/80 dark:bg-white/[0.02] rounded-lg p-2.5 border border-border/30 dark:border-white/[0.04]">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Ruler className="w-2.5 h-2.5" /> Range</span>
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">{distance} cm</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Zap className="w-2.5 h-2.5" /> Solar</span>
-                    <span className="font-semibold text-amber-600 dark:text-amber-400">{solar.toFixed(1)}V</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Cpu className="w-2.5 h-2.5" /> AI Vision</span>
-                    <span className="text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> YOLOv8
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Thermometer className="w-2.5 h-2.5" /> Motor</span>
-                    <span className={`font-semibold ${motorTemp > 60 ? "text-red-500 font-bold" : motorTemp > 45 ? "text-orange-500" : "text-gray-800 dark:text-gray-200"}`}>
-                      {motorTemp.toFixed(1)}°C
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Radio className="w-2.5 h-2.5" /> IMU</span>
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">{pitch}°/{roll}°/{yaw}°</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Signal className="w-2.5 h-2.5" /> Signal</span>
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">{rssi} dBm / {fps} FPS</span>
-                  </div>
-                </div>
-              </motion.div>
+                <X className="w-3.5 h-3.5" />
+              </Button>
             </div>
-          </div>
 
-          {/* Subtle bottom glow line */}
-          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
-        </motion.div>
+            {/* Settings Body */}
+            <div className="p-4 space-y-4 overflow-y-auto min-h-0 select-none">
+              
+              {/* Row 1: Firebase Link & Heartbeat */}
+              <div className="flex items-center justify-between py-1.5 border-b border-black/[0.05] dark:border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                  <Database className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white/90">Firebase Connection</span>
+                    <span className="text-[9px] text-slate-500 dark:text-white/40">Realtime database status & active latency</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge
+                    variant="outline"
+                    className={`text-[9px] h-4.5 font-mono ${
+                      fbStatus === "ready"
+                        ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20"
+                        : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                    }`}
+                  >
+                    <span className={`w-1 h-1 rounded-full mr-1 ${fbStatus === "ready" ? "bg-indigo-500 dark:bg-indigo-400" : "bg-red-500"}`} />
+                    {fbStatus === "ready" ? `Live ${ping !== null ? `(${ping}ms)` : ""}` : "Not Configured"}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className={`text-[9px] h-4.5 font-mono ${
+                      roverOnline
+                        ? "bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20"
+                        : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full mr-1 ${roverOnline ? "bg-green-500 dark:bg-green-400 animate-pulse" : "bg-red-500"}`} />
+                    {roverOnline ? "ROVER ONLINE" : "ROVER OFFLINE"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Row 1.5: Network Latency Meter */}
+              <div className="flex items-center justify-between py-1.5 border-b border-black/[0.05] dark:border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                  <Signal className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white/90">Network Latency Meter</span>
+                    <span className="text-[9px] text-slate-500 dark:text-white/40">Active round-trip-time heartbeat check</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Latency Signal Strength bars visualizer */}
+                  <div className="flex items-end gap-[2px] h-3 px-1 select-none">
+                    <div className={`w-[3px] h-1.5 rounded-sm transition-colors duration-300 ${
+                      ping !== null && ping < 60 ? "bg-emerald-500" : ping !== null && ping <= 150 ? "bg-amber-500" : ping !== null ? "bg-rose-500 animate-pulse" : "bg-slate-300 dark:bg-slate-700"
+                    }`} />
+                    <div className={`w-[3px] h-2.5 rounded-sm transition-colors duration-300 ${
+                      ping !== null && ping < 60 ? "bg-emerald-500" : ping !== null && ping <= 150 ? "bg-amber-500" : "bg-slate-300 dark:bg-slate-700"
+                    }`} />
+                    <div className={`w-[3px] h-3.5 rounded-sm transition-colors duration-300 ${
+                      ping !== null && ping < 60 ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
+                    }`} />
+                  </div>
+                  <span className={`text-xs font-mono font-bold ${getPingColorClass(ping)}`}>
+                    {ping !== null ? `Ping: ${ping}ms` : "Ping: Offline"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Connections (ESP32-CAM and WS) */}
+              <div className="space-y-2.5 pt-1">
+                <span className="text-[8px] font-bold text-slate-400 dark:text-white/30 tracking-widest uppercase">Hardware Connections</span>
+                
+                {/* ESP32-CAM */}
+                <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-slate-50/50 dark:bg-white/[0.02] border border-black/5 dark:border-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <span className="text-[10px] font-bold uppercase text-slate-700 dark:text-white/80">ESP32-CAM Stream Host</span>
+                    </div>
+                    {streamSrc && !streamError && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 dark:bg-green-400 animate-pulse" />
+                    )}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      className="h-7 text-xs bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white font-mono flex-1 border border-slate-200 dark:border-white/10 rounded-md px-2 focus:outline-none focus:border-blue-500/50"
+                      placeholder="192.168.1.100"
+                      value={roverIp}
+                      onChange={e => setRoverIp(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleConnectCamera()}
+                    />
+                    {streamSrc ? (
+                      <button
+                        onClick={handleDisconnectCamera}
+                        className="px-2.5 py-1 text-[10px] font-bold rounded border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
+                      >
+                        Disconnect
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleConnectCamera}
+                        disabled={!roverIp.trim()}
+                        className="px-2.5 py-1 text-[10px] font-bold rounded bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-all cursor-pointer border-0"
+                      >
+                        Connect
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* WebSocket */}
+                <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-slate-50/50 dark:bg-white/[0.02] border border-black/5 dark:border-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-[10px] font-bold uppercase text-slate-700 dark:text-white/80">WebSocket Server Endpoint</span>
+                    </div>
+                    {roverConnectionStatus === "connected" && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 dark:bg-green-400 animate-pulse" />
+                    )}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      className="h-7 text-xs bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white font-mono flex-1 border border-slate-200 dark:border-white/10 rounded-md px-2 focus:outline-none focus:border-emerald-500/50"
+                      placeholder="ws://192.168.1.100:81"
+                      value={wsUrl}
+                      onChange={e => setWsUrl(e.target.value)}
+                    />
+                    {roverConnectionStatus === "connected" ? (
+                      <button
+                        onClick={handleDisconnectWs}
+                        className="px-2.5 py-1 text-[10px] font-bold rounded border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
+                      >
+                        Disconnect
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleConnectWs}
+                        disabled={roverConnectionStatus === "connecting"}
+                        className="px-2.5 py-1 text-[10px] font-bold rounded bg-emerald-600 hover:bg-emerald-750 disabled:opacity-50 text-white transition-all cursor-pointer border-0"
+                      >
+                        {roverConnectionStatus === "connecting" ? "Connecting..." : "Connect"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 4: ESP32 Firmware reboot */}
+              <div className="flex items-center justify-between py-2 border-t border-black/10 dark:border-white/10 mt-1 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <RotateCcw className="w-4 h-4 text-rose-500 dark:text-rose-400 shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white/90">Firmware Restart</span>
+                    <span className="text-[9px] text-slate-500 dark:text-white/40">Remote soft-reboot trigger for ESP32</span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleReboot}
+                  disabled={rebooting}
+                  className="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 disabled:opacity-50 transition-all flex items-center justify-center cursor-pointer shadow-md min-w-[90px]"
+                >
+                  {rebooting ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
+                      Rebooting
+                    </>
+                  ) : (
+                    "Soft Reset"
+                  )}
+                </button>
+              </div>
+
+            </div>
+          </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );
@@ -359,16 +412,18 @@ const SettingsPanel = React.memo(function SettingsPanel({
 interface CameraViewProps {
   streamSrc: string | null;
   streamError: boolean;
-  fps: number;
-  rssi: number;
+  rssi: number | undefined;
+  solar: number | undefined;
+  distance: number | undefined;
   setStreamError: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const CameraView = React.memo(function CameraView({
   streamSrc,
   streamError,
-  fps,
   rssi,
+  solar,
+  distance,
   setStreamError
 }: CameraViewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
@@ -414,21 +469,26 @@ const CameraView = React.memo(function CameraView({
           <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${streamSrc && !streamError ? "bg-green-400 animate-pulse" : "bg-white/30"}`} />
           <span className="text-white text-[11px] font-medium">{streamSrc && !streamError ? "Live" : "No Signal"}</span>
         </div>
-        {streamSrc && !streamError && (
-          <div className="bg-black/55 backdrop-blur-md border border-white/10 rounded-md px-2.5 py-1">
-            <span className="text-white/80 font-mono text-[11px]">{fps} FPS</span>
-          </div>
-        )}
       </div>
       <div className="absolute top-3 right-3 flex items-center gap-2 pointer-events-none">
-        <div className="flex items-center gap-1.5 bg-black/55 backdrop-blur-md border border-white/10 rounded-md px-2.5 py-1">
-          <Signal className="w-3 h-3 text-white/70" />
-          <span className="text-white/80 font-mono text-[11px]">{rssi} dBm</span>
-        </div>
-        <div className="flex items-center gap-1.5 bg-black/55 backdrop-blur-md border border-white/10 rounded-md px-2.5 py-1">
-          <Battery className="w-3 h-3 text-white/70" />
-          <span className="text-white/80 font-mono text-[11px]">87% — 3654mAh</span>
-        </div>
+        {rssi !== undefined && (
+          <div className="flex items-center gap-1.5 bg-black/55 backdrop-blur-md border border-white/10 rounded-md px-2.5 py-1">
+            <Signal className="w-3 h-3 text-white/70" />
+            <span className="text-white/80 font-mono text-[11px]">{rssi} dBm</span>
+          </div>
+        )}
+        {solar !== undefined && (
+          <div className="flex items-center gap-1.5 bg-black/55 backdrop-blur-md border border-white/10 rounded-md px-2.5 py-1">
+            <Zap className="w-3 h-3 text-yellow-400" />
+            <span className="text-white/80 font-mono text-[11px]">{solar.toFixed(1)}V</span>
+          </div>
+        )}
+        {distance !== undefined && (
+          <div className="flex items-center gap-1.5 bg-black/55 backdrop-blur-md border border-white/10 rounded-md px-2.5 py-1">
+            <Ruler className="w-3 h-3 text-blue-400" />
+            <span className="text-white/80 font-mono text-[11px]">{distance} cm</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -773,38 +833,33 @@ const ArmControls = React.memo(function ArmControls({
 export default function Dashboard() {
   const { theme, setTheme } = useTheme();
 
-  // ── Simulated telemetry
-  const [simFps,      setSimFps]      = useState(24);
-  const [simRssi,     setSimRssi]     = useState(-62);
-  const [simDistance, setSimDistance] = useState(120);
-  const [simPitch,    setSimPitch]    = useState(2.4);
-  const [simRoll,     setSimRoll]     = useState(-1.2);
-  const [simYaw,      setSimYaw]      = useState(45.1);
-  const [simSolar,    setSimSolar]    = useState(4.2);
-  const [simMotorT,   setSimMotorT]   = useState(42.5);
-
-  useInterval(() => {
-    setSimFps(Math.floor(22 + Math.random() * 6));
-    setSimRssi(Math.floor(-65 + Math.random() * 8));
-    setSimDistance(Math.floor(115 + Math.random() * 10));
-    setSimPitch(Number((2.4  + (Math.random() * 0.4 - 0.2)).toFixed(1)));
-    setSimRoll(Number((-1.2  + (Math.random() * 0.4 - 0.2)).toFixed(1)));
-    setSimYaw(Number((45.1   + (Math.random() * 0.4 - 0.2)).toFixed(1)));
-  }, 1000);
 
   // ── Live telemetry from Firebase
   const [liveTelemetry, setLiveTelemetry] = useState<{
     distance?: number; solar?: number; motor_temp?: number; rssi?: number;
   }>({});
 
-  const distance  = liveTelemetry.distance   ?? simDistance;
-  const solar     = liveTelemetry.solar      ?? simSolar;
-  const motorTemp = liveTelemetry.motor_temp ?? simMotorT;
-  const rssi      = liveTelemetry.rssi       ?? simRssi;
-  const fps       = simFps;
-  const pitch     = simPitch;
-  const roll      = simRoll;
-  const yaw       = simYaw;
+  const distance  = liveTelemetry.distance;
+  const solar     = liveTelemetry.solar;
+  const motorTemp = liveTelemetry.motor_temp;
+  const rssi      = liveTelemetry.rssi;
+
+  // ── System configuration settings (dynamic Firebase bindings)
+  const [maxSpeed, setMaxSpeedState] = useState<number>(80); // Default speed limit
+  const [rebooting, setRebooting] = useState(false);
+
+  const handleMaxSpeedChange = useCallback(async (speed: number) => {
+    setMaxSpeedState(speed);
+    await setMaxSpeed(speed);
+  }, []);
+
+  const handleReboot = useCallback(async () => {
+    setRebooting(true);
+    await triggerReboot();
+    setTimeout(() => {
+      setRebooting(false);
+    }, 4000);
+  }, []);
 
   // ── Rover heartbeat / Firebase connection
   const [roverOnline, setRoverOnline] = useState(false);
@@ -822,7 +877,11 @@ export default function Dashboard() {
   }, []);
 
   // ── Control Mode
-  const [controlMode, setControlMode] = useState<ControlMode>("manual");
+  const [controlMode, setControlModeState] = useState<ControlMode>("manual");
+  const setControlMode = useCallback(async (mode: ControlMode) => {
+    setControlModeState(mode);
+    await setFirebaseControlMode(mode);
+  }, []);
 
   // ── D-Pad
   const [activeDirection, setActiveDirection] = useState<Direction | null>(null);
@@ -1147,7 +1206,11 @@ export default function Dashboard() {
 
   // ── Voice
   const [isListening, setIsListening] = useState(false);
-  const [voiceLanguage, setVoiceLanguage] = useState("bn-BD");
+  const [voiceLanguage, setVoiceLanguageState] = useState("bn-BD");
+  const setVoiceLanguage = useCallback(async (lang: string) => {
+    setVoiceLanguageState(lang);
+    await setFirebaseLanguage(lang);
+  }, []);
   const recognitionRef = useRef<any | null>(null);
   const isVoiceProcessingRef = useRef(false);
 
@@ -1363,23 +1426,61 @@ export default function Dashboard() {
   const [ping, setPing] = useState<number | null>(null);
   const [wsUrl, setWsUrl] = useState("");
 
-  useInterval(() => {
-    if (roverConnectionStatus === "connected") setPing(Math.floor(8 + Math.random() * 18));
-  }, 1200);
+  // ── Network RTT Ping checker (Runs every 3 seconds to measure Firebase latency, fallback to simulation if not configured)
+  useEffect(() => {
+    let active = true;
+    let timerId: ReturnType<typeof setInterval> | null = null;
+
+    const performPingCheck = async () => {
+      if (!active) return;
+      const startTime = Date.now();
+      if (firebaseConfigured) {
+        try {
+          // Race the Firebase node set write with a 2.5s safety timeout
+          await Promise.race([
+            writePingRTT(startTime),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2500))
+          ]);
+          if (active) {
+            const rtt = Date.now() - startTime;
+            setPing(rtt);
+          }
+        } catch (err) {
+          console.warn("[ARES-01] Firebase RTT check failed:", err);
+          if (active) {
+            setPing(null);
+          }
+        }
+      } else {
+        // Fallback simulation: random latency between 20-55ms
+        if (active) {
+          const simPing = Math.floor(18 + Math.random() * 32);
+          setPing(simPing);
+        }
+      }
+    };
+
+    // Run first check immediately, then every 3 seconds
+    performPingCheck();
+    timerId = setInterval(performPingCheck, 3000);
+
+    return () => {
+      active = false;
+      if (timerId) clearInterval(timerId);
+    };
+  }, []);
 
   const handleConnectWs = useCallback(() => {
     console.log(`${LOG} Connecting WebSocket → ${wsUrl || "<no url>"}`);
     setRoverConnectionStatus("connecting");
     setTimeout(() => {
       setRoverConnectionStatus("connected");
-      setPing(12);
       console.log(`${LOG} WebSocket connected`);
     }, 2000);
   }, [wsUrl]);
 
   const handleDisconnectWs = useCallback(() => {
     setRoverConnectionStatus("disconnected");
-    setPing(null);
     console.log(`${LOG} WebSocket disconnected`);
   }, []);
 
@@ -1395,12 +1496,15 @@ export default function Dashboard() {
         setShowSettings={setShowSettings}
         theme={theme}
         setTheme={setTheme}
+        ping={ping}
       />
 
       {/* Settings / Connection Panel */}
       <SettingsPanel
         showSettings={showSettings}
+        setShowSettings={setShowSettings}
         fbStatus={fbStatus}
+        roverOnline={roverOnline}
         roverIp={roverIp}
         setRoverIp={setRoverIp}
         streamSrc={streamSrc}
@@ -1413,14 +1517,8 @@ export default function Dashboard() {
         handleConnectWs={handleConnectWs}
         handleDisconnectWs={handleDisconnectWs}
         ping={ping}
-        distance={distance}
-        solar={solar}
-        motorTemp={motorTemp}
-        rssi={rssi}
-        fps={fps}
-        pitch={pitch}
-        roll={roll}
-        yaw={yaw}
+        rebooting={rebooting}
+        handleReboot={handleReboot}
       />
 
       {/* Camera View Section (Top - Max 48dvh Viewport Height Budget) */}
@@ -1475,8 +1573,9 @@ export default function Dashboard() {
           <CameraView
             streamSrc={streamSrc}
             streamError={streamError}
-            fps={fps}
             rssi={rssi}
+            solar={solar}
+            distance={distance}
             setStreamError={setStreamError}
           />
         </div>
