@@ -102,7 +102,10 @@ const Header = React.memo(function Header({
   return (
     <header className="h-12 border border-border/60 bg-white dark:bg-white/[0.03] backdrop-blur-xl flex items-center justify-between px-5 shrink-0 z-20 shadow-sm dark:shadow-none">
       <div className="flex items-center gap-3">
-        <h1 className="font-bold text-base tracking-tight text-gray-900 dark:text-white">ARES-01</h1>
+        <h1 className="font-bold text-base tracking-tight text-gray-900 dark:text-white">
+          <img src="/logo.png" alt="ARES-01 Logo" className="h-7 w-auto object-contain mr-3 inline-block transform-gpu" />
+          ARES-01
+        </h1>
         <span className="text-gray-500 dark:text-gray-400 text-xs font-medium hidden sm:inline">Rover Mission Control</span>
         <Badge
           variant="outline"
