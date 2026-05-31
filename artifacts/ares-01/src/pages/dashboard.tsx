@@ -1408,10 +1408,24 @@ export default function Dashboard() {
 
   const handleConnectCamera = useCallback(() => {
     if (!roverIp.trim()) return;
-    const url = roverIp.startsWith("http") ? `${roverIp}/stream` : `http://${roverIp}/stream`;
-    console.log(`${LOG} Connecting camera stream: ${url}`);
+    
+    let url = roverIp.trim();
+    let finalUrl = "";
+    
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      // Rule 1: Starts with protocol, use exactly as inputted
+      finalUrl = url;
+    } else if (url.includes("/")) {
+      // Rule 2: Contains a slash (custom path), prepend http:// but keep path intact
+      finalUrl = `http://${url}`;
+    } else {
+      // Default: Plain host/IP, prepend http:// and append /stream
+      finalUrl = `http://${url}/stream`;
+    }
+    
+    console.log(`${LOG} Connecting camera stream: ${finalUrl}`);
     setStreamError(false);
-    setStreamSrc(url);
+    setStreamSrc(finalUrl);
   }, [roverIp]);
 
   const handleDisconnectCamera = useCallback(() => {
