@@ -426,10 +426,9 @@ const CameraView = React.memo(function CameraView({
   distance,
   setStreamError
 }: CameraViewProps) {
-  const imgRef = useRef<HTMLImageElement>(null);
   return (
     <div
-      className="w-full h-full relative bg-black/60 backdrop-blur-md overflow-hidden flex items-center justify-center"
+      className="w-full h-full relative bg-black/60 backdrop-blur-md overflow-hidden flex items-center justify-center pointer-events-none select-none"
       style={{
         transform: "translate3d(0, 0, 0)",
         willChange: "transform"
@@ -437,11 +436,13 @@ const CameraView = React.memo(function CameraView({
     >
       {streamSrc && !streamError ? (
         <img
-          ref={imgRef}
           src={streamSrc}
           alt="ARES-01 live feed"
-          className="w-full h-full object-cover"
-          onError={() => { setStreamError(true); console.warn(`[ARES-01] Camera stream error at ${streamSrc}`); }}
+          className="w-full h-full object-cover transform-gpu translate-z-0 will-change-transform pointer-events-none select-none"
+          onError={() => {
+            setStreamError(true);
+            console.warn(`[ARES-01] Camera stream error at ${streamSrc}`);
+          }}
           data-testid="camera-feed"
         />
       ) : (
@@ -1423,6 +1424,10 @@ export default function Dashboard() {
       finalUrl = `http://${url}/stream`;
     }
     
+    // Cache bust to prevent shared image cache pool accumulation
+    const separator = finalUrl.includes("?") ? "&" : "?";
+    finalUrl = `${finalUrl}${separator}cb=${Date.now()}`;
+    
     console.log(`${LOG} Connecting camera stream: ${finalUrl}`);
     setStreamError(false);
     setStreamSrc(finalUrl);
@@ -1574,6 +1579,14 @@ export default function Dashboard() {
             position: absolute;
             height: 100%;
             animation: progressGlow 1.2s linear infinite;
+          }
+          .mjpeg-gpu-layer {
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+            will-change: transform;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            rendering-intent: relative-colorimetric;
           }
         `}</style>
 
