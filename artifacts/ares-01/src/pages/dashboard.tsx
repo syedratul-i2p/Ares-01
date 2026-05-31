@@ -447,9 +447,18 @@ const CameraView = React.memo(function CameraView({
         />
       ) : (
         <>
-          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          {/* Ambient AI visual glow layers behind the grid */}
+          <div 
+            className="absolute left-0 top-0 bottom-0 w-1/4 bg-gradient-to-b from-cyan-400/10 via-purple-500/10 to-indigo-500/10 blur-2xl animate-pulse pointer-events-none z-0"
+            style={{ animationDuration: '4000ms' }}
+          />
+          <div 
+            className="absolute right-0 top-0 bottom-0 w-1/4 bg-gradient-to-b from-cyan-400/10 via-purple-500/10 to-indigo-500/10 blur-2xl animate-pulse pointer-events-none z-0"
+            style={{ animationDuration: '4000ms' }}
+          />
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none z-10"
             style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-20">
             {streamError ? (
               <>
                 <AlertTriangle className="w-8 h-8 text-red-400/60" />
@@ -508,17 +517,21 @@ const DPad = React.memo(function DPad({
   onRelease,
   onStop
 }: DPadProps) {
-  const dpadActive = (dir: Direction) =>
-    activeDirection === dir 
-      ? "scale-90 bg-primary border-primary text-primary-foreground shadow-inner shadow-black/30 ring-4 ring-primary/30" 
-      : "bg-white/5 hover:bg-white/10 border-white/10 hover:border-white/20 text-foreground";
+  const getButtonClass = (dir: Direction) => {
+    const isActive = activeDirection === dir;
+    return `w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center cursor-pointer transition-all duration-300 ${
+      isActive
+        ? "scale-90 bg-indigo-600 border-2 border-indigo-650 text-white shadow-inner shadow-black/30 ring-4 ring-indigo-500/30 rounded-xl"
+        : "border-2 border-slate-300 shadow-[0_3px_10px_rgba(0,0,0,0.03)] bg-white hover:border-indigo-500 hover:bg-slate-50 text-slate-800 rounded-xl"
+    }`;
+  };
 
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-2">
       <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Drive Controls</div>
       <div className="flex flex-col items-center gap-2 sm:gap-3 select-none">
         <button
-          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${dpadActive("forward")}`}
+          className={getButtonClass("forward")}
           onMouseDown={() => onPress("forward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("forward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-fwd">
@@ -526,23 +539,23 @@ const DPad = React.memo(function DPad({
         </button>
         <div className="flex gap-2 sm:gap-3">
           <button
-            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${dpadActive("left")}`}
+            className={getButtonClass("left")}
             onMouseDown={() => onPress("left")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("left"); }} onTouchEnd={onRelease}
             data-testid="btn-move-left">
             <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           <button
-            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${
-              activeDirection === "stop" 
-                ? "bg-red-600 border-red-600 text-white shadow-inner shadow-black/30 ring-4 ring-red-500/30 scale-90" 
-                : "bg-red-500/10 hover:bg-red-500/20 border-red-500/20 text-red-400"
+            className={`w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center cursor-pointer transition-all duration-300 ${
+              activeDirection === "stop"
+                ? "scale-90 bg-red-600 border-2 border-red-650 text-white shadow-inner shadow-black/30 ring-4 ring-red-500/30 rounded-xl"
+                : "border-2 border-slate-300 shadow-[0_3px_10px_rgba(0,0,0,0.03)] bg-white hover:border-red-500 hover:bg-slate-50 text-red-600 rounded-xl"
             }`}
             onClick={onStop} data-testid="btn-move-stop">
             <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
           </button>
           <button
-            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${dpadActive("right")}`}
+            className={getButtonClass("right")}
             onMouseDown={() => onPress("right")} onMouseUp={onRelease} onMouseLeave={onRelease}
             onTouchStart={e => { e.preventDefault(); onPress("right"); }} onTouchEnd={onRelease}
             data-testid="btn-move-right">
@@ -550,7 +563,7 @@ const DPad = React.memo(function DPad({
           </button>
         </div>
         <button
-          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border backdrop-blur-md transition-all active:scale-95 duration-100 cursor-pointer ${dpadActive("backward")}`}
+          className={getButtonClass("backward")}
           onMouseDown={() => onPress("backward")} onMouseUp={onRelease} onMouseLeave={onRelease}
           onTouchStart={e => { e.preventDefault(); onPress("backward"); }} onTouchEnd={onRelease}
           data-testid="btn-move-back">
@@ -560,7 +573,7 @@ const DPad = React.memo(function DPad({
           <AnimatePresence>
             {activeDirection && (
               <motion.span key={activeDirection} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="text-xs font-mono font-semibold text-primary uppercase tracking-widest" data-testid="text-active-direction">
+                className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest" data-testid="text-active-direction">
                 ▶ {activeDirection}
               </motion.span>
             )}
@@ -1787,54 +1800,53 @@ export default function Dashboard() {
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className="h-full flex items-center justify-center p-3 overflow-hidden">
 
-                <div className="flex flex-col items-center justify-center p-4 space-y-4 bg-card/40 rounded-xl border border-border/50 w-full max-w-md max-h-[42dvh] overflow-hidden">
-                  <div className="flex items-center gap-3 w-full max-w-xs">
-                    <label htmlFor="voice-lang" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                      Select Language:
-                    </label>
+                <div className="flex flex-col items-center justify-between p-5 space-y-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md max-h-[42dvh] shadow-xl relative overflow-hidden select-none">
+                  <div className="flex items-center justify-between w-full border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">Voice Link</span>
                     <select
                       id="voice-lang"
                       value={voiceLanguage}
                       onChange={e => setVoiceLanguage(e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm bg-background border border-border/80 rounded-md focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer text-foreground"
+                      className="px-2 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer text-slate-800 dark:text-slate-200 font-medium"
                     >
-                      <option value="bn-BD">বাংলা (Bangla)</option>
-                      <option value="en-US">English</option>
+                      <option value="bn-BD">বাংলা (BD)</option>
+                      <option value="en-US">English (US)</option>
                     </select>
                   </div>
 
-                  {/* Active High-Fidelity Audio Waveform Effect */}
-                  <div className={`flex items-center justify-center gap-1.5 h-12 transition-opacity duration-300 ${isListening ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}>
-                    <div className="w-1.5 h-6 bg-red-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-1.5 h-10 bg-red-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-1.5 h-12 bg-red-500 rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-8 bg-red-500 rounded-full animate-bounce [animation-delay:-0.4s]"></div>
-                    <div className="w-1.5 h-5 bg-red-500 rounded-full animate-bounce [animation-delay:-0.2s]"></div>
+                  {/* Concentric Pulsing Microphone Container */}
+                  <div className="relative flex items-center justify-center w-24 h-24 my-2">
+                    {/* Concentric glowing rings */}
+                    <div className="absolute inset-0 rounded-full bg-indigo-500/5 dark:bg-indigo-400/5 animate-ping pointer-events-none" style={{ animationDuration: '1000ms' }} />
+                    <div className="absolute inset-2 rounded-full border border-indigo-400/10 dark:border-indigo-400/5 animate-ping pointer-events-none" style={{ animationDuration: '1500ms', animationDelay: '200ms' }} />
+                    <div className="absolute inset-4 rounded-full bg-indigo-500/10 dark:bg-indigo-400/10 animate-ping pointer-events-none" style={{ animationDuration: '2000ms', animationDelay: '400ms' }} />
+                    
+                    {/* Central Button */}
+                    <button
+                      id="voice-toggle-btn"
+                      onClick={handleVoiceToggle}
+                      className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 shadow-lg cursor-pointer ${
+                        isListening 
+                          ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/30' 
+                          : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/30'
+                      }`}
+                    >
+                      <Mic className={`w-6 h-6 ${isListening ? 'animate-pulse' : ''}`} />
+                    </button>
                   </div>
 
-                  <button
-                    id="voice-toggle-btn"
-                    onClick={handleVoiceToggle}
-                    className={`w-full max-w-xs py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer ${
-                      isListening 
-                        ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse shadow-red-500/25' 
-                        : 'bg-primary hover:bg-primary/90 text-primary-foreground'
-                    }`}
-                  >
-                    {isListening ? (
-                      <>
-                        <span>🔴</span> Stop & Run Command
-                      </>
-                    ) : (
-                      <>
-                        <span>🎙️</span> Start Voice Command
-                      </>
-                    )}
-                  </button>
+                  {/* Horizontal Waveform Skeleton */}
+                  <div className="flex items-center justify-center gap-1.5 h-8 w-full max-w-[160px] py-1">
+                    <div className={`w-1 rounded-full transition-all duration-300 ${isListening ? 'bg-red-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} style={{ height: isListening ? '12px' : '4px', animationDuration: '0.7s' }} />
+                    <div className={`w-1 rounded-full transition-all duration-300 ${isListening ? 'bg-indigo-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} style={{ height: isListening ? '24px' : '4px', animationDuration: '1.1s' }} />
+                    <div className={`w-1 rounded-full transition-all duration-300 ${isListening ? 'bg-purple-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} style={{ height: isListening ? '18px' : '4px', animationDuration: '0.8s' }} />
+                    <div className={`w-1 rounded-full transition-all duration-300 ${isListening ? 'bg-cyan-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} style={{ height: isListening ? '28px' : '4px', animationDuration: '1.3s' }} />
+                    <div className={`w-1 rounded-full transition-all duration-300 ${isListening ? 'bg-indigo-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} style={{ height: isListening ? '14px' : '4px', animationDuration: '0.9s' }} />
+                  </div>
                   
                   {/* Live Transcript Display Box */}
-                  <div className="w-full text-center min-h-[1.5rem]">
-                    <p className="text-xs text-muted-foreground italic" id="voice-transcript-preview">
+                  <div className="w-full text-center min-h-[1.5rem] mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 italic font-medium" id="voice-transcript-preview">
                       {isListening ? "Listening..." : "Click button to speak"}
                     </p>
                   </div>
