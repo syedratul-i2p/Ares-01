@@ -116,18 +116,21 @@ const Header = React.memo(function Header({
           }`}
         >
           <span className={`w-1.5 h-1.5 rounded-full mr-1.5 transition-colors duration-500 ${roverOnline ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
-          {roverOnline ? "ROVER ONLINE" : "ROVER OFFLINE"}
+          <span className="hidden sm:inline">{roverOnline ? "ROVER ONLINE" : "ROVER OFFLINE"}</span>
+          <span className="sm:hidden">{roverOnline ? "ON" : "OFF"}</span>
         </Badge>
         {fbStatus === "not-configured" && (
           <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/10 text-amber-700 dark:text-amber-600 border-amber-500/30 gap-1">
             <Database className="w-2.5 h-2.5" />
-            Firebase not configured
+            <span className="hidden sm:inline">Firebase not configured</span>
+            <span className="sm:hidden">DB Off</span>
           </Badge>
         )}
         {fbStatus === "ready" && (
           <Badge variant="outline" className="text-[10px] h-5 bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30 gap-1">
             <Database className="w-2.5 h-2.5" />
-            Firebase live
+            <span className="hidden sm:inline">Firebase live</span>
+            <span className="sm:hidden">DB Live</span>
           </Badge>
         )}
         {fbStatus === "ready" && ping !== null && (
@@ -789,44 +792,57 @@ const ArmControls = React.memo(function ArmControls({
         ))}
       </div>
 
-      <div className="flex flex-row gap-2 items-center bg-white/5 border border-white/10 rounded-xl p-1.5 py-2 w-full font-sans backdrop-blur-md shadow-lg">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-2 items-center bg-white/5 border border-white/10 rounded-xl p-3 md:p-1.5 md:py-2 w-full font-sans backdrop-blur-md shadow-lg">
         <div className="relative w-[130px] h-[80px] rounded-lg border border-white/10 bg-black/40 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
           <canvas ref={canvasRef} width={130} height={80} className="w-full h-full block" />
         </div>
 
-        <div className="flex-1 w-full space-y-0.5">
+        <div className="flex-1 w-full space-y-2 md:space-y-0.5">
           {JOINT_ORDER.map(key => {
             const cfg = JOINT_CONFIG[key];
             const value = joints[key];
             return (
-              <div key={key} className="flex items-center gap-1.5">
-                <div className="flex items-center gap-1 w-[70px] shrink-0">
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
-                  <span className="text-xs font-semibold text-muted-foreground truncate">{cfg.label}</span>
+              <div key={key} className="flex flex-col md:flex-row md:items-center gap-1 md:gap-1.5 py-1 md:py-0 border-b border-white/[0.03] md:border-0 pb-1.5 md:pb-0">
+                {/* Mobile label and value row */}
+                <div className="flex items-center justify-between md:w-[70px] shrink-0">
+                  <div className="flex items-center gap-1">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
+                    <span className="text-xs font-semibold text-muted-foreground truncate">{cfg.label}</span>
+                  </div>
+                  {/* Show value on right side on mobile */}
+                  <span className={`text-xs font-mono font-bold md:hidden ${cfg.accentClass}`}>{value}°</span>
                 </div>
-                <button onClick={() => updateJoint(key, -stepSize)}
-                  className="h-5 w-5 shrink-0 rounded border border-white/10 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/10 hover:border-white/20 active:scale-90 transition-all font-semibold cursor-pointer text-foreground"
-                  data-testid={`btn-arm-${key}-dec`}>−</button>
-                <input type="range" min={0} max={180} value={value}
-                  onChange={e => setJointAngle(key, Number(e.target.value))}
-                  className="joint-slider flex-1 h-1.5 cursor-pointer"
-                  style={{ accentColor: cfg.color }}
-                  data-testid={`slider-arm-${key}`} />
-                <button onClick={() => updateJoint(key, stepSize)}
-                  className="h-5 w-5 shrink-0 rounded border border-white/10 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/10 hover:border-white/20 active:scale-90 transition-all font-semibold cursor-pointer text-foreground"
-                  data-testid={`btn-arm-${key}-inc`}>+</button>
-                {editingJoint === key ? (
-                  <input type="number" min={0} max={180} value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onBlur={() => commitEdit(key)}
-                    onKeyDown={e => { if (e.key === "Enter") commitEdit(key); if (e.key === "Escape") setEditingJoint(null); }}
-                    className="w-10 text-right font-mono text-[10px] border border-primary rounded px-0.5 py-0.5 bg-background focus:outline-none"
-                    autoFocus data-testid={`input-arm-${key}-direct`} />
-                ) : (
-                  <button onClick={() => startEdit(key, value)}
-                    className={`w-10 text-right text-xs font-mono font-bold tabular-nums hover:underline cursor-text shrink-0 ${cfg.accentClass}`}
-                    data-testid={`btn-arm-${key}-value`}>{value}°</button>
-                )}
+                
+                {/* Control Row: Dec button, Slider, Inc button, Desktop Value */}
+                <div className="flex items-center gap-2 flex-1 w-full">
+                  <button onClick={() => updateJoint(key, -stepSize)}
+                    className="h-6 w-6 md:h-5 md:w-5 shrink-0 rounded border border-white/10 flex items-center justify-center text-xs md:text-[10px] bg-white/5 hover:bg-white/10 hover:border-white/20 active:scale-90 transition-all font-semibold cursor-pointer text-foreground select-none"
+                    data-testid={`btn-arm-${key}-dec`}>−</button>
+                  <input type="range" min={0} max={180} value={value}
+                    onChange={e => setJointAngle(key, Number(e.target.value))}
+                    className="joint-slider flex-1 h-2 md:h-1.5 cursor-pointer"
+                    style={{ accentColor: cfg.color }}
+                    data-testid={`slider-arm-${key}`} />
+                  <button onClick={() => updateJoint(key, stepSize)}
+                    className="h-6 w-6 md:h-5 md:w-5 shrink-0 rounded border border-white/10 flex items-center justify-center text-xs md:text-[10px] bg-white/5 hover:bg-white/10 hover:border-white/20 active:scale-90 transition-all font-semibold cursor-pointer text-foreground select-none"
+                    data-testid={`btn-arm-${key}-inc`}>+</button>
+                  
+                  {/* Desktop value editor / viewer */}
+                  <div className="hidden md:block w-10 text-right">
+                    {editingJoint === key ? (
+                      <input type="number" min={0} max={180} value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onBlur={() => commitEdit(key)}
+                        onKeyDown={e => { if (e.key === "Enter") commitEdit(key); if (e.key === "Escape") setEditingJoint(null); }}
+                        className="w-10 text-right font-mono text-[10px] border border-primary rounded px-0.5 py-0.5 bg-background focus:outline-none"
+                        autoFocus data-testid={`input-arm-${key}-direct`} />
+                    ) : (
+                      <button onClick={() => startEdit(key, value)}
+                        className={`w-10 text-right text-xs font-mono font-bold tabular-nums hover:underline cursor-text shrink-0 ${cfg.accentClass}`}
+                        data-testid={`btn-arm-${key}-value`}>{value}°</button>
+                    )}
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -1521,7 +1537,7 @@ export default function Dashboard() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="h-dvh w-screen bg-background text-foreground flex flex-col font-sans overflow-hidden justify-between">
+    <div className="min-h-screen md:h-dvh w-screen bg-background text-foreground flex flex-col font-sans overflow-y-auto md:overflow-hidden justify-between">
       
       {/* Header */}
       <Header
@@ -1604,6 +1620,23 @@ export default function Dashboard() {
             image-rendering: crisp-edges;
             rendering-intent: relative-colorimetric;
           }
+          @media (max-width: 768px) {
+            .your-main-control-container { 
+               display: flex !important;
+               flex-direction: row !important; /* Force side-by-side */
+               justify-content: space-around !important;
+               align-items: flex-start !important;
+               width: 100% !important;
+               overflow: hidden !important;
+            }
+            .drive-control-section, .arm-control-section {
+               width: 50% !important;
+               transform: scale(0.80); /* Scale down to fit everything */
+               transform-origin: top center;
+            }
+            /* Disable body scroll completely for the app feel */
+            body, html { overflow: hidden !important; touch-action: none; }
+          }
         `}</style>
 
         {/* Ambient Auroras */}
@@ -1625,10 +1658,10 @@ export default function Dashboard() {
       </div>
 
       {/* Interactive Control Section (Middle - Max 42dvh Viewport Height Budget) */}
-      <div className="flex-1 flex flex-col min-h-0 max-h-[44vh] md:max-h-[42dvh] overflow-hidden bg-background z-10">
+      <div className="flex-1 flex flex-col min-h-0 md:max-h-[42dvh] md:overflow-hidden bg-background z-10">
         
         {/* 2. MODE SELECTOR TABS */}
-        <div className="shrink-0 px-4 pt-2.5 pb-1.5 bg-transparent z-10">
+        <div className="shrink-0 px-4 pt-4 md:pt-2.5 pb-2 bg-transparent z-10">
           <div className="relative flex rounded-xl bg-muted/80 p-1 gap-0.5 max-w-xl mx-auto border border-border/50">
             {CONTROL_TABS.map(tab => (
               <button key={tab.id} onClick={() => setControlMode(tab.id)}
@@ -1648,7 +1681,7 @@ export default function Dashboard() {
         </div>
 
         {/* 3. INTERACTIVE CONTROL AREA */}
-        <div className="flex-1 min-h-0 overflow-hidden relative">
+        <div className="flex-1 min-h-0 md:overflow-hidden relative">
           <AnimatePresence mode="wait" initial={false}>
 
             {/* ── MANUAL CONTROL ── */}
@@ -1656,10 +1689,10 @@ export default function Dashboard() {
               <motion.div key="manual"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="px-4 py-1.5 h-full overflow-hidden flex items-center justify-center">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-5xl w-full mx-auto items-center justify-items-center">
+                className="px-4 py-3 md:h-full md:overflow-hidden flex items-center justify-center">
+                <div className="your-main-control-container grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-3 max-w-5xl w-full mx-auto items-start md:items-center justify-items-center py-4 px-2">
                   {/* LEFT: Drive D-Pad */}
-                  <div className="flex items-center justify-center w-full">
+                  <div className="drive-control-section flex items-center justify-center w-full">
                     <DPad
                       activeDirection={activeDirection}
                       onPress={handleDirectionPress}
@@ -1669,7 +1702,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* RIGHT: 5DOF Arm */}
-                  <div className="flex items-center justify-center w-full">
+                  <div className="arm-control-section flex items-center justify-center w-full">
                     <ArmControls
                       joints={joints}
                       setJointAngle={setJointAngle}
@@ -1695,7 +1728,7 @@ export default function Dashboard() {
               <motion.div key="ai"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="p-3 overflow-hidden h-full flex flex-col justify-center animate-none">
+                className="p-3 md:overflow-hidden md:h-full flex flex-col justify-center animate-none">
                 <div className="max-w-2xl w-full mx-auto flex flex-col gap-1.5 animate-none">
                   <div className="text-center">
                     <div className="text-xs sm:text-sm font-semibold">Autonomous Directive</div>
@@ -1801,9 +1834,9 @@ export default function Dashboard() {
               <motion.div key="voice"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="h-full flex items-center justify-center p-3 overflow-hidden">
+                className="md:h-full flex items-center justify-center p-3 md:overflow-hidden">
 
-                <div className="flex flex-col items-center justify-between p-5 space-y-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md max-h-[42dvh] shadow-xl relative overflow-hidden select-none">
+                <div className="flex flex-col items-center justify-between p-5 space-y-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md md:max-h-[42dvh] shadow-xl relative overflow-hidden select-none">
                   <div className="flex items-center justify-between w-full border-b border-slate-100 dark:border-slate-800 pb-3">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">Voice Link</span>
                     <select
