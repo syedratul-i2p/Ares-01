@@ -758,15 +758,10 @@ const ArmControls = React.memo(function ArmControls({
     drawJointNode(x1, y1, JOINT_CONFIG.shoulder.color, 4);
     drawJointNode(x2, y2, JOINT_CONFIG.elbow.color, 4);
     drawJointNode(x3, y3, JOINT_CONFIG.wrist.color, 3.5);
-
-    // Text labels
-    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-    ctx.font = "8px monospace";
-    ctx.fillText("2D PREVIEW (SIDE VIEW)", 8, 12);
   }, [joints]);
 
   return (
-    <div className="flex flex-col gap-1.5 py-0.5">
+    <div className="arm-controls-wrapper flex flex-col gap-1.5 py-0.5">
       <div className="flex items-center justify-between">
         <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">5DOF Arm Control</div>
         <div className="flex items-center gap-2">
@@ -784,7 +779,7 @@ const ArmControls = React.memo(function ArmControls({
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-1">
+      <div className="arm-presets-grid grid grid-cols-4 gap-1">
         {ARM_PRESETS.map(p => (
           <button key={p.name} onClick={() => applyPreset(p)}
             className="text-[11px] py-1 px-1 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all text-muted-foreground hover:text-foreground font-medium cursor-pointer"
@@ -792,19 +787,19 @@ const ArmControls = React.memo(function ArmControls({
         ))}
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 md:gap-2 items-center bg-white/5 border border-white/10 rounded-xl p-3 md:p-1.5 md:py-2 w-full font-sans backdrop-blur-md shadow-lg">
-        <div className="relative w-[130px] h-[80px] rounded-lg border border-white/10 bg-black/40 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
+      <div className="arm-canvas-sliders-flex flex flex-col md:flex-row gap-4 md:gap-2 items-center bg-white/5 border border-white/10 rounded-xl p-3 md:p-1.5 md:py-2 w-full font-sans backdrop-blur-md shadow-lg">
+        <div className="arm-canvas-wrapper relative w-[130px] h-[80px] rounded-lg border border-white/10 bg-black/40 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
           <canvas ref={canvasRef} width={130} height={80} className="w-full h-full block" />
         </div>
 
-        <div className="flex-1 w-full space-y-2 md:space-y-0.5">
+        <div className="arm-sliders-container flex-1 w-full space-y-2 md:space-y-0.5">
           {JOINT_ORDER.map(key => {
             const cfg = JOINT_CONFIG[key];
             const value = joints[key];
             return (
-              <div key={key} className="flex flex-col md:flex-row md:items-center gap-1 md:gap-1.5 py-1 md:py-0 border-b border-white/[0.03] md:border-0 pb-1.5 md:pb-0">
+              <div key={key} className="arm-slider-row flex flex-col md:flex-row md:items-center gap-1 md:gap-1.5 py-1 md:py-0 border-b border-white/[0.03] md:border-0 pb-1.5 md:pb-0">
                 {/* Mobile label and value row */}
-                <div className="flex items-center justify-between md:w-[70px] shrink-0">
+                <div className="arm-slider-label-row flex items-center justify-between md:w-[70px] shrink-0">
                   <div className="flex items-center gap-1">
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
                     <span className="text-xs font-semibold text-muted-foreground truncate">{cfg.label}</span>
@@ -814,7 +809,7 @@ const ArmControls = React.memo(function ArmControls({
                 </div>
                 
                 {/* Control Row: Dec button, Slider, Inc button, Desktop Value */}
-                <div className="flex items-center gap-2 flex-1 w-full">
+                <div className="arm-slider-control-row flex items-center gap-2 flex-1 w-full">
                   <button onClick={() => updateJoint(key, -stepSize)}
                     className="h-6 w-6 md:h-5 md:w-5 shrink-0 rounded border border-white/10 flex items-center justify-center text-xs md:text-[10px] bg-white/5 hover:bg-white/10 hover:border-white/20 active:scale-90 transition-all font-semibold cursor-pointer text-foreground select-none"
                     data-testid={`btn-arm-${key}-dec`}>−</button>
@@ -830,7 +825,7 @@ const ArmControls = React.memo(function ArmControls({
                   {/* Desktop value editor / viewer */}
                   <div className="hidden md:block w-10 text-right">
                     {editingJoint === key ? (
-                      <input type="number" min={0} max={180} value={editValue}
+                       <input type="number" min={0} max={180} value={editValue}
                         onChange={e => setEditValue(e.target.value)}
                         onBlur={() => commitEdit(key)}
                         onKeyDown={e => { if (e.key === "Enter") commitEdit(key); if (e.key === "Escape") setEditingJoint(null); }}
@@ -849,7 +844,7 @@ const ArmControls = React.memo(function ArmControls({
         </div>
       </div>
       <button
-        className="w-full mt-1 text-xs gap-1.5 h-7 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center cursor-pointer shadow-md active:scale-98"
+        className="arm-reset-bottom w-full mt-1 text-xs gap-1.5 h-7 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center cursor-pointer shadow-md active:scale-98"
         onClick={handleResetArm}
         data-testid="btn-arm-reset-bottom"
       >
@@ -1621,19 +1616,120 @@ export default function Dashboard() {
             rendering-intent: relative-colorimetric;
           }
           @media (max-width: 768px) {
+            /* 1. Macro Layout Re-stacking: Centered vertical column stack */
             .your-main-control-container { 
                display: flex !important;
-               flex-direction: row !important; /* Force side-by-side */
-               justify-content: space-around !important;
-               align-items: flex-start !important;
+               flex-direction: column !important; /* Revert to vertical stack */
+               justify-content: flex-start !important;
+               align-items: center !important;
                width: 100% !important;
                overflow: hidden !important;
+               gap: 6px !important;
+               padding-top: 2px !important;
+               padding-bottom: 2px !important;
             }
-            .drive-control-section, .arm-control-section {
-               width: 50% !important;
-               transform: scale(0.80); /* Scale down to fit everything */
-               transform-origin: top center;
+            .drive-control-section {
+               width: 100% !important;
+               display: flex !important;
+               justify-content: center !important;
+               align-items: center !important;
             }
+            .arm-control-section {
+               width: 100% !important;
+               max-width: 450px !important;
+               display: flex !important;
+               justify-content: center !important;
+               align-items: center !important;
+            }
+
+            /* 2. Micro Layout Refactoring: Side-by-side canvas and sliders inside Arm Control */
+            .arm-controls-wrapper {
+               gap: 4px !important;
+               width: 100% !important;
+            }
+            .arm-canvas-sliders-flex {
+               display: flex !important;
+               flex-direction: row !important; /* Horizontal side-by-side row configuration */
+               align-items: center !important;
+               justify-content: space-between !important;
+               width: 100% !important;
+               gap: 8px !important;
+               padding: 4px !important;
+            }
+            .arm-canvas-wrapper {
+               width: 120px !important;
+               height: 74px !important;
+               flex-shrink: 0 !important;
+            }
+            .arm-canvas-wrapper canvas {
+               width: 120px !important;
+               height: 74px !important;
+            }
+            .arm-sliders-container {
+               flex: 1 !important;
+               width: auto !important;
+               display: flex !important;
+               flex-direction: column !important;
+               gap: 2px !important;
+               margin-top: 0px !important;
+            }
+
+            /* 3. Slider Row Adjustments (tight horizontal matching) */
+            .arm-slider-row {
+               display: flex !important;
+               flex-direction: row !important; /* Labels and sliders match tightly on right side */
+               align-items: center !important;
+               justify-content: space-between !important;
+               width: 100% !important;
+               padding: 1.5px 0 !important;
+               border-bottom: 0 !important;
+               gap: 4px !important;
+            }
+            .arm-slider-label-row {
+               width: 62px !important; /* Fixed tight label/value column */
+               display: flex !important;
+               justify-content: space-between !important;
+               align-items: center !important;
+               flex-shrink: 0 !important;
+            }
+            .arm-slider-label-row span {
+               font-size: 8.5px !important;
+            }
+            .arm-slider-control-row {
+               display: flex !important;
+               align-items: center !important;
+               gap: 4px !important;
+               flex: 1 !important;
+            }
+            .arm-slider-control-row button {
+               width: 16px !important;
+               height: 16px !important;
+               font-size: 8px !important;
+               padding: 0 !important;
+               display: flex !important;
+               align-items: center !important;
+               justify-content: center !important;
+            }
+            .joint-slider {
+               height: 6px !important;
+               flex: 1 !important;
+            }
+
+            /* Additional scaling and scroll prevention */
+            .arm-presets-grid {
+               gap: 2px !important;
+            }
+            .arm-presets-grid button {
+               font-size: 8px !important;
+               padding: 2px 1px !important;
+            }
+            .arm-reset-bottom {
+               margin-top: 2px !important;
+               height: 20px !important;
+               font-size: 9px !important;
+               padding: 0 !important;
+            }
+
             /* Disable body scroll completely for the app feel */
             body, html { overflow: hidden !important; touch-action: none; }
           }
